@@ -1,5 +1,8 @@
 <?php
-namespace League\OAuth2\Client\Provider;
+
+namespace Raehalme\OAuth2\Client\Provider;
+
+use League\OAuth2\Client\Provider\ResourceOwnerInterface;
 
 class KeycloakResourceOwner implements ResourceOwnerInterface
 {

@@ -1,5 +1,5 @@
 {
-    "name": "league/oauth2-keycloak",
+    "name": "raehalme/oauth2-keycloak",
     "description": "Keycloak OAuth 2.0 Client Provider for The PHP League OAuth2-Client",
     "license": "MIT",
     "authors": [
@@ -28,12 +28,12 @@
     },
     "autoload": {
         "psr-4": {
-            "League\\OAuth2\\Client\\": "src/"
+            "Raehalme\\OAuth2\\Client\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "League\\OAuth2\\Client\\Test\\": "test/src/"
+            "Raehalme\\OAuth2\\Client\\Test\\": "test/src/"
         }
     },
     "extra": {
