@@ -1,7 +1,8 @@
 <?php
 
-namespace League\OAuth2\Client\Provider;
+namespace Raehalme\OAuth2\Client\Provider;
 
+use League\OAuth2\Client\Provider\AbstractProvider;
 use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
 use League\OAuth2\Client\Token\AccessToken;
 use League\OAuth2\Client\Tool\BearerAuthorizationTrait;
@@ -32,7 +33,7 @@ class Keycloak extends AbstractProvider
      */
     public function getBaseAuthorizationUrl()
     {
-        return $this->authServerUrl.'/realms/'.$this->realm.'/protocol/openid-connect/auth';
+        return $this->getBaseUrlWithRealm().'/protocol/openid-connect/auth';
     }
 
     /**
@@ -44,7 +45,7 @@ class Keycloak extends AbstractProvider
      */
     public function getBaseAccessTokenUrl(array $params)
     {
-        return $this->authServerUrl.'/realms/'.$this->realm.'/protocol/openid-connect/token';
+        return $this->getBaseUrlWithRealm().'/protocol/openid-connect/token';
     }
 
     /**
@@ -56,7 +57,17 @@ class Keycloak extends AbstractProvider
      */
     public function getResourceOwnerDetailsUrl(AccessToken $token)
     {
-        return $this->authServerUrl.'/realms/'.$this->realm.'/protocol/openid-connect/userinfo';
+        return $this->getBaseUrlWithRealm().'/protocol/openid-connect/userinfo';
+    }
+
+    /**
+     * Creates base url from provider configuration.
+     *
+     * @return string
+     */
+    protected function getBaseUrlWithRealm()
+    {
+        return $this->authServerUrl.'/realms/'.$this->realm;
     }
 
     /**
@@ -97,7 +108,6 @@ class Keycloak extends AbstractProvider
      */
     protected function createResourceOwner(array $response, AccessToken $token)
     {
-        $user = new KeycloakResourceOwner($response);
-        return $user;
+        return new KeycloakResourceOwner($response);
     }
 }

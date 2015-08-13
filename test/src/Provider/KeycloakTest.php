@@ -1,4 +1,6 @@
-<?php namespace League\OAuth2\Client\Test\Provider;
+<?php
+
+namespace Raehalme\OAuth2\Client\Test\Provider;
 
 use Mockery as m;
 
@@ -8,7 +10,7 @@ class KeycloakTest extends \PHPUnit_Framework_TestCase
 
     protected function setUp()
     {
-        $this->provider = new \League\OAuth2\Client\Provider\Keycloak([
+        $this->provider = new \Raehalme\OAuth2\Client\Provider\Keycloak([
             'authServerUrl' => 'http://localhost:8081/auth',
             'realm' => 'mock_realm',
             'clientId' => 'mock_client_id',
