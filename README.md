@@ -89,7 +89,7 @@ $provider = new League\OAuth2\Client\Provider\Keycloak([
     'redirectUri'       => 'https://example.com/callback-url',
 ]);
 
-$token = $provider->getAccessToken('refresh_token', ['refresh_token' => $refreshToken]);
+$token = $provider->getAccessToken('refresh_token', ['refresh_token' => $token->getRefreshToken()]);
 ```
 
 ## Testing
