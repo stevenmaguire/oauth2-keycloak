@@ -1,6 +1,6 @@
 <?php
 
-namespace Raehalme\OAuth2\Client\Test\Provider;
+namespace Stevenmaguire\OAuth2\Client\Test\Provider;
 
 use Mockery as m;
 
@@ -10,8 +10,8 @@ class KeycloakTest extends \PHPUnit_Framework_TestCase
 
     protected function setUp()
     {
-        $this->provider = new \Raehalme\OAuth2\Client\Provider\Keycloak([
-            'authServerUrl' => 'http://localhost:8081/auth',
+        $this->provider = new \Stevenmaguire\OAuth2\Client\Provider\Keycloak([
+            'authServerUrl' => 'http://mock.url/auth',
             'realm' => 'mock_realm',
             'clientId' => 'mock_client_id',
             'clientSecret' => 'mock_secret',

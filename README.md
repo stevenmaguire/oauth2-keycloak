@@ -1,10 +1,10 @@
 # Keycloak Provider for OAuth 2.0 Client
-[![Latest Version](https://img.shields.io/github/release/raehalme/oauth2-keycloak.svg?style=flat-square)](https://github.com/raehalme/oauth2-keycloak/releases)
+[![Latest Version](https://img.shields.io/github/release/stevenmaguire/oauth2-keycloak.svg?style=flat-square)](https://github.com/stevenmaguire/oauth2-keycloak/releases)
 [![Software License](https://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat-square)](LICENSE.md)
-[![Build Status](https://img.shields.io/travis/raehalme/oauth2-keycloak/master.svg?style=flat-square)](https://travis-ci.org/raehalme/oauth2-keycloak)
-[![Coverage Status](https://img.shields.io/scrutinizer/coverage/g/raehalme/oauth2-keycloak.svg?style=flat-square)](https://scrutinizer-ci.com/g/raehalme/oauth2-keycloak/code-structure)
-[![Quality Score](https://img.shields.io/scrutinizer/g/raehalme/oauth2-keycloak.svg?style=flat-square)](https://scrutinizer-ci.com/g/raehalme/oauth2-keycloak)
-[![Total Downloads](https://img.shields.io/packagist/dt/raehalme/oauth2-keycloak.svg?style=flat-square)](https://packagist.org/packages/raehalme/oauth2-keycloak)
+[![Build Status](https://img.shields.io/travis/stevenmaguire/oauth2-keycloak/master.svg?style=flat-square)](https://travis-ci.org/stevenmaguire/oauth2-keycloak)
+[![Coverage Status](https://img.shields.io/scrutinizer/coverage/g/stevenmaguire/oauth2-keycloak.svg?style=flat-square)](https://scrutinizer-ci.com/g/stevenmaguire/oauth2-keycloak/code-structure)
+[![Quality Score](https://img.shields.io/scrutinizer/g/stevenmaguire/oauth2-keycloak.svg?style=flat-square)](https://scrutinizer-ci.com/g/stevenmaguire/oauth2-keycloak)
+[![Total Downloads](https://img.shields.io/packagist/dt/stevenmaguire/oauth2-keycloak.svg?style=flat-square)](https://packagist.org/packages/stevenmaguire/oauth2-keycloak)
 
 This package provides Keycloak OAuth 2.0 support for the PHP League's [OAuth 2.0 Client](https://github.com/thephpleague/oauth2-client).
 
@@ -13,12 +13,12 @@ This package provides Keycloak OAuth 2.0 support for the PHP League's [OAuth 2.0
 To install, use composer:
 
 ```
-composer require raehalme/oauth2-keycloak
+composer require stevenmaguire/oauth2-keycloak
 ```
 
 ## Usage
 
-Usage is the same as The League's OAuth client, using `\Raehalme\OAuth2\Client\Provider\Keycloak` as the provider.
+Usage is the same as The League's OAuth client, using `\Stevenmaguire\OAuth2\Client\Provider\Keycloak` as the provider.
 
 Use `authServerUrl` to specify the Keycloak server URL. You can lookup the correct value from the Keycloak client installer JSON under `auth-server-url`, eg. `http://localhost:8080/auth`.
 
@@ -27,7 +27,7 @@ Use `realm` to specify the Keycloak realm name. You can lookup the correct value
 ### Authorization Code Flow
 
 ```php
-$provider = new Raehalme\OAuth2\Client\Provider\Keycloak([
+$provider = new Stevenmaguire\OAuth2\Client\Provider\Keycloak([
     'authServerUrl'     => '{keycloak-server-url}',
     'realm'             => '{keycloak-realm}',
     'clientId'          => '{keycloak-client-id}',
@@ -81,7 +81,7 @@ if (!isset($_GET['code'])) {
 ### Refreshing a Token
 
 ```php
-$provider = new Raehalme\OAuth2\Client\Provider\Keycloak([
+$provider = new Stevenmaguire\OAuth2\Client\Provider\Keycloak([
     'authServerUrl'     => '{keycloak-server-url}',
     'realm'             => '{keycloak-realm}',
     'clientId'          => '{keycloak-client-id}',
@@ -100,15 +100,15 @@ $ ./vendor/bin/phpunit
 
 ## Contributing
 
-Please see [CONTRIBUTING](https://github.com/raehalme/oauth2-keycloak/blob/master/CONTRIBUTING.md) for details.
+Please see [CONTRIBUTING](https://github.com/stevenmaguire/oauth2-keycloak/blob/master/CONTRIBUTING.md) for details.
 
 
 ## Credits
 
-- [Thomas Raehalme](https://github.com/raehalme)
-- [All Contributors](https://github.com/raehalme/oauth2-keycloak/contributors)
+- [Thomas Stevenmaguire](https://github.com/stevenmaguire)
+- [All Contributors](https://github.com/stevenmaguire/oauth2-keycloak/contributors)
 
 
 ## License
 
-The MIT License (MIT). Please see [License File](https://github.com/raehalme/oauth2-keycloak/blob/master/LICENSE) for more information.
+The MIT License (MIT). Please see [License File](https://github.com/stevenmaguire/oauth2-keycloak/blob/master/LICENSE) for more information.

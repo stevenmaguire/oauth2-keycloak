@@ -2,7 +2,7 @@
 
 Contributions are **welcome** and will be fully **credited**.
 
-We accept contributions via Pull Requests on [Github](https://github.com/raehalme/oauth2-keycloak).
+We accept contributions via Pull Requests on [Github](https://github.com/stevenmaguire/oauth2-keycloak).
 
 
 ## Pull Requests
