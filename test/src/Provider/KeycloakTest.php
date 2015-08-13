@@ -1,4 +1,6 @@
-<?php namespace Raehalme\OAuth2\Client\Test\Provider;
+<?php
+
+namespace Raehalme\OAuth2\Client\Test\Provider;
 
 use Mockery as m;
 

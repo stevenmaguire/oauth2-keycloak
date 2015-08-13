@@ -33,7 +33,7 @@ class Keycloak extends AbstractProvider
      */
     public function getBaseAuthorizationUrl()
     {
-        return $this->authServerUrl.'/realms/'.$this->realm.'/protocol/openid-connect/auth';
+        return $this->getBaseUrlWithRealm().'/protocol/openid-connect/auth';
     }
 
     /**
@@ -45,7 +45,7 @@ class Keycloak extends AbstractProvider
      */
     public function getBaseAccessTokenUrl(array $params)
     {
-        return $this->authServerUrl.'/realms/'.$this->realm.'/protocol/openid-connect/token';
+        return $this->getBaseUrlWithRealm().'/protocol/openid-connect/token';
     }
 
     /**
@@ -57,7 +57,17 @@ class Keycloak extends AbstractProvider
      */
     public function getResourceOwnerDetailsUrl(AccessToken $token)
     {
-        return $this->authServerUrl.'/realms/'.$this->realm.'/protocol/openid-connect/userinfo';
+        return $this->getBaseUrlWithRealm().'/protocol/openid-connect/userinfo';
+    }
+
+    /**
+     * Creates base url from provider configuration.
+     *
+     * @return string
+     */
+    protected function getBaseUrlWithRealm()
+    {
+        return $this->authServerUrl.'/realms/'.$this->realm;
     }
 
     /**
