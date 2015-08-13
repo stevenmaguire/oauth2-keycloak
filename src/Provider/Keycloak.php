@@ -16,14 +16,14 @@ class Keycloak extends AbstractProvider
      *
      * @var string
      */
-    public $authServerUrl = NULL;
+    public $authServerUrl = null;
 
     /**
      * Realm name, eg. demo.
      *
      * @var string
      */
-    public $realm = NULL;
+    public $realm = null;
 
     /**
      * Get authorization url to begin OAuth flow

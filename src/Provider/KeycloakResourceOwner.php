@@ -1,4 +1,4 @@
-<?php 
+<?php
 namespace League\OAuth2\Client\Provider;
 
 class KeycloakResourceOwner implements ResourceOwnerInterface
