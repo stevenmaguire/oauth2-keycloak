@@ -22,7 +22,7 @@ Usage is the same as The League's OAuth client, using `\Stevenmaguire\OAuth2\Cli
 
 Use `authServerUrl` to specify the Keycloak server URL. You can lookup the correct value from the Keycloak client installer JSON under `auth-server-url`, eg. `http://localhost:8080/auth`.
 
-Use `realm` to specify the Keycloak realm name. You can lookup the correct value from the Keycloak client installer JSON under `realm`, eg. `master`.
+Use `realm` to specify the Keycloak realm name. You can lookup the correct value from the Keycloak client installer JSON under `resource`, eg. `master`.
 
 ### Authorization Code Flow
 
