@@ -28,11 +28,14 @@ Use `realm` to specify the Keycloak realm name. You can lookup the correct value
 
 ```php
 $provider = new Stevenmaguire\OAuth2\Client\Provider\Keycloak([
-    'authServerUrl'     => '{keycloak-server-url}',
-    'realm'             => '{keycloak-realm}',
-    'clientId'          => '{keycloak-client-id}',
-    'clientSecret'      => '{keycloak-client-secret}',
-    'redirectUri'       => 'https://example.com/callback-url',
+    'authServerUrl'         => '{keycloak-server-url}',
+    'realm'                 => '{keycloak-realm}',
+    'clientId'              => '{keycloak-client-id}',
+    'clientSecret'          => '{keycloak-client-secret}',
+    'redirectUri'           => 'https://example.com/callback-url',
+    'encryptionAlgorithm'   => 'RS256',                             // optional
+    'encryptionKeyPath'     => '../key.pem'                         // optional
+    'encryptionKey'         => 'contents_of_key_or_certificate'     // optional
 ]);
 
 if (!isset($_GET['code'])) {
@@ -90,6 +93,63 @@ $provider = new Stevenmaguire\OAuth2\Client\Provider\Keycloak([
 ]);
 
 $token = $provider->getAccessToken('refresh_token', ['refresh_token' => $token->getRefreshToken()]);
+```
+
+### Handling encryption
+
+If you've configured your Keycloak instance to use encryption, there are some advanced options available to you.
+
+#### Configure the provider to use the same encryption algorithm
+
+```php
+$provider = new Stevenmaguire\OAuth2\Client\Provider\Keycloak([
+    // ...
+    'encryptionAlgorithm'   => 'RS256',
+]);
+```
+
+or
+
+```php
+$provider->setEncryptionAlgorithm('RS256');
+```
+
+#### Configure the provider to use the expected decryption public key or certificate
+
+##### By key value
+
+```php
+$key = "-----BEGIN PUBLIC KEY-----\n....\n-----END PUBLIC KEY-----";
+// or
+// $key = "-----BEGIN CERTIFICATE-----\n....\n-----END CERTIFICATE-----";
+
+$provider = new Stevenmaguire\OAuth2\Client\Provider\Keycloak([
+    // ...
+    'encryptionKey'   => $key,
+]);
+```
+
+or
+
+```php
+$provider->setEncryptionKey($key);
+```
+
+##### By key path
+
+```php
+$keyPath = '../key.pem';
+
+$provider = new Stevenmaguire\OAuth2\Client\Provider\Keycloak([
+    // ...
+    'encryptionKeyPath'   => $keyPath,
+]);
+```
+
+or
+
+```php
+$provider->setEncryptionKeyPath($keyPath);
 ```
 
 ## Testing
