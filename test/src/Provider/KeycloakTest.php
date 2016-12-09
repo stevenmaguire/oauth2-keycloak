@@ -1,136 +1,273 @@
 <?php
 
-namespace Stevenmaguire\OAuth2\Client\Test\Provider;
-
-use Mockery as m;
-
-class KeycloakTest extends \PHPUnit_Framework_TestCase
+namespace
 {
-    protected $provider;
+    $mockFileGetContents = null;
+}
 
-    protected function setUp()
+namespace Stevenmaguire\OAuth2\Client\Provider
+{
+    function file_get_contents()
     {
-        $this->provider = new \Stevenmaguire\OAuth2\Client\Provider\Keycloak([
-            'authServerUrl' => 'http://mock.url/auth',
-            'realm' => 'mock_realm',
-            'clientId' => 'mock_client_id',
-            'clientSecret' => 'mock_secret',
-            'redirectUri' => 'none',
-        ]);
+        global $mockFileGetContents;
+        if (isset($mockFileGetContents) && ! is_null($mockFileGetContents)) {
+            return $mockFileGetContents;
+        } else {
+            return call_user_func_array('\file_get_contents', func_get_args());
+        }
     }
+}
 
-    public function tearDown()
+namespace Stevenmaguire\OAuth2\Client\Test\Provider
+{
+    use Mockery as m;
+
+    class KeycloakTest extends \PHPUnit_Framework_TestCase
     {
-        m::close();
-        parent::tearDown();
-    }
+        protected $provider;
 
-    public function testAuthorizationUrl()
-    {
-        $url = $this->provider->getAuthorizationUrl();
-        $uri = parse_url($url);
-        parse_str($uri['query'], $query);
+        protected function setUp()
+        {
+            $this->provider = new \Stevenmaguire\OAuth2\Client\Provider\Keycloak([
+                'authServerUrl' => 'http://mock.url/auth',
+                'realm' => 'mock_realm',
+                'clientId' => 'mock_client_id',
+                'clientSecret' => 'mock_secret',
+                'redirectUri' => 'none',
+            ]);
+        }
 
-        $this->assertArrayHasKey('client_id', $query);
-        $this->assertArrayHasKey('redirect_uri', $query);
-        $this->assertArrayHasKey('state', $query);
-        $this->assertArrayHasKey('scope', $query);
-        $this->assertArrayHasKey('response_type', $query);
-        $this->assertArrayHasKey('approval_prompt', $query);
-        $this->assertNotNull($this->provider->getState());
-    }
+        public function tearDown()
+        {
+            m::close();
+            parent::tearDown();
+        }
 
+        public function testAuthorizationUrl()
+        {
+            $url = $this->provider->getAuthorizationUrl();
+            $uri = parse_url($url);
+            parse_str($uri['query'], $query);
 
-    public function testScopes()
-    {
-        $options = ['scope' => [uniqid(),uniqid()]];
+            $this->assertArrayHasKey('client_id', $query);
+            $this->assertArrayHasKey('redirect_uri', $query);
+            $this->assertArrayHasKey('state', $query);
+            $this->assertArrayHasKey('scope', $query);
+            $this->assertArrayHasKey('response_type', $query);
+            $this->assertArrayHasKey('approval_prompt', $query);
+            $this->assertNotNull($this->provider->getState());
+        }
 
-        $url = $this->provider->getAuthorizationUrl($options);
+        public function testEncryptionAlgorithm()
+        {
+            $algorithm = uniqid();
+            $provider = new \Stevenmaguire\OAuth2\Client\Provider\Keycloak([
+                'encryptionAlgorithm' => $algorithm,
+            ]);
 
-        $this->assertContains(urlencode(implode(',', $options['scope'])), $url);
-    }
+            $this->assertEquals($algorithm, $provider->encryptionAlgorithm);
 
-    public function testGetAuthorizationUrl()
-    {
-        $url = $this->provider->getAuthorizationUrl();
-        $uri = parse_url($url);
+            $algorithm = uniqid();
+            $provider->setEncryptionAlgorithm($algorithm);
 
-        $this->assertEquals('/auth/realms/mock_realm/protocol/openid-connect/auth', $uri['path']);
-    }
+            $this->assertEquals($algorithm, $provider->encryptionAlgorithm);
+        }
 
-    public function testGetBaseAccessTokenUrl()
-    {
-        $params = [];
+        public function testEncryptionKey()
+        {
+            $key = uniqid();
+            $provider = new \Stevenmaguire\OAuth2\Client\Provider\Keycloak([
+                'encryptionKey' => $key,
+            ]);
 
-        $url = $this->provider->getBaseAccessTokenUrl($params);
-        $uri = parse_url($url);
+            $this->assertEquals($key, $provider->encryptionKey);
 
-        $this->assertEquals('/auth/realms/mock_realm/protocol/openid-connect/token', $uri['path']);
-    }
+            $key = uniqid();
+            $provider->setEncryptionKey($key);
 
-    public function testGetAccessToken()
-    {
-        $response = m::mock('Psr\Http\Message\ResponseInterface');
-        $response->shouldReceive('getBody')->andReturn('{"access_token":"mock_access_token", "scope":"email", "token_type":"bearer"}');
-        $response->shouldReceive('getHeader')->andReturn(['content-type' => 'json']);
+            $this->assertEquals($key, $provider->encryptionKey);
+        }
 
-        $client = m::mock('GuzzleHttp\ClientInterface');
-        $client->shouldReceive('send')->times(1)->andReturn($response);
-        $this->provider->setHttpClient($client);
+        public function testEncryptionKeyPath()
+        {
+            global $mockFileGetContents;
+            $path = uniqid();
+            $key = uniqid();
+            $mockFileGetContents = $key;
 
-        $token = $this->provider->getAccessToken('authorization_code', ['code' => 'mock_authorization_code']);
+            $provider = new \Stevenmaguire\OAuth2\Client\Provider\Keycloak([
+                'encryptionKeyPath' => $path,
+            ]);
 
-        $this->assertEquals('mock_access_token', $token->getToken());
-        $this->assertNull($token->getExpires());
-        $this->assertNull($token->getRefreshToken());
-        $this->assertNull($token->getResourceOwnerId());
-    }
+            $this->assertEquals($key, $provider->encryptionKey);
 
-    public function testUserData()
-    {
-        $userId = rand(1000,9999);
-        $name = uniqid();
-        $nickname = uniqid();
-        $email = uniqid();
+            $path = uniqid();
+            $key = uniqid();
+            $mockFileGetContents = $key;
 
-        $postResponse = m::mock('Psr\Http\Message\ResponseInterface');
-        $postResponse->shouldReceive('getBody')->andReturn('access_token=mock_access_token&expires=3600&refresh_token=mock_refresh_token&otherKey={1234}');
-        $postResponse->shouldReceive('getHeader')->andReturn(['content-type' => 'application/x-www-form-urlencoded']);
+            $provider->setEncryptionKeyPath($path);
 
-        $userResponse = m::mock('Psr\Http\Message\ResponseInterface');
-        $userResponse->shouldReceive('getBody')->andReturn('{"sub": '.$userId.', "name": "'.$name.'", "email": "'.$email.'"}');
-        $userResponse->shouldReceive('getHeader')->andReturn(['content-type' => 'json']);
+            $this->assertEquals($key, $provider->encryptionKey);
+        }
 
-        $client = m::mock('GuzzleHttp\ClientInterface');
-        $client->shouldReceive('send')
-            ->times(2)
-            ->andReturn($postResponse, $userResponse);
-        $this->provider->setHttpClient($client);
+        public function testScopes()
+        {
+            $options = ['scope' => [uniqid(),uniqid()]];
 
-        $token = $this->provider->getAccessToken('authorization_code', ['code' => 'mock_authorization_code']);
-        $user = $this->provider->getResourceOwner($token);
+            $url = $this->provider->getAuthorizationUrl($options);
 
-        $this->assertEquals($userId, $user->getId());
-        $this->assertEquals($userId, $user->toArray()['sub']);
-        $this->assertEquals($name, $user->getName());
-        $this->assertEquals($name, $user->toArray()['name']);
-        $this->assertEquals($email, $user->getEmail());
-        $this->assertEquals($email, $user->toArray()['email']);
-    }
+            $this->assertContains(urlencode(implode(',', $options['scope'])), $url);
+        }
 
-    /**
-     * @expectedException League\OAuth2\Client\Provider\Exception\IdentityProviderException
-     */
-    public function testErrorResponse()
-    {
-        $response = m::mock('Psr\Http\Message\ResponseInterface');
-        $response->shouldReceive('getBody')->andReturn('{"error": "invalid_grant", "error_description": "Code not found"}');
-        $response->shouldReceive('getHeader')->andReturn(['content-type' => 'json']);
+        public function testGetAuthorizationUrl()
+        {
+            $url = $this->provider->getAuthorizationUrl();
+            $uri = parse_url($url);
 
-        $client = m::mock('GuzzleHttp\ClientInterface');
-        $client->shouldReceive('send')->times(1)->andReturn($response);
-        $this->provider->setHttpClient($client);
+            $this->assertEquals('/auth/realms/mock_realm/protocol/openid-connect/auth', $uri['path']);
+        }
 
-        $token = $this->provider->getAccessToken('authorization_code', ['code' => 'mock_authorization_code']);
+        public function testGetBaseAccessTokenUrl()
+        {
+            $params = [];
+
+            $url = $this->provider->getBaseAccessTokenUrl($params);
+            $uri = parse_url($url);
+
+            $this->assertEquals('/auth/realms/mock_realm/protocol/openid-connect/token', $uri['path']);
+        }
+
+        public function testGetAccessToken()
+        {
+            $response = m::mock('Psr\Http\Message\ResponseInterface');
+            $response->shouldReceive('getBody')->andReturn('{"access_token":"mock_access_token", "scope":"email", "token_type":"bearer"}');
+            $response->shouldReceive('getHeader')->andReturn(['content-type' => 'json']);
+
+            $client = m::mock('GuzzleHttp\ClientInterface');
+            $client->shouldReceive('send')->times(1)->andReturn($response);
+            $this->provider->setHttpClient($client);
+
+            $token = $this->provider->getAccessToken('authorization_code', ['code' => 'mock_authorization_code']);
+
+            $this->assertEquals('mock_access_token', $token->getToken());
+            $this->assertNull($token->getExpires());
+            $this->assertNull($token->getRefreshToken());
+            $this->assertNull($token->getResourceOwnerId());
+        }
+
+        public function testUserData()
+        {
+            $userId = rand(1000,9999);
+            $name = uniqid();
+            $nickname = uniqid();
+            $email = uniqid();
+
+            $postResponse = m::mock('Psr\Http\Message\ResponseInterface');
+            $postResponse->shouldReceive('getBody')->andReturn('access_token=mock_access_token&expires=3600&refresh_token=mock_refresh_token&otherKey={1234}');
+            $postResponse->shouldReceive('getHeader')->andReturn(['content-type' => 'application/x-www-form-urlencoded']);
+
+            $userResponse = m::mock('Psr\Http\Message\ResponseInterface');
+            $userResponse->shouldReceive('getBody')->andReturn('{"sub": '.$userId.', "name": "'.$name.'", "email": "'.$email.'"}');
+            $userResponse->shouldReceive('getHeader')->andReturn(['content-type' => 'json']);
+
+            $client = m::mock('GuzzleHttp\ClientInterface');
+            $client->shouldReceive('send')
+                ->times(2)
+                ->andReturn($postResponse, $userResponse);
+            $this->provider->setHttpClient($client);
+
+            $token = $this->provider->getAccessToken('authorization_code', ['code' => 'mock_authorization_code']);
+            $user = $this->provider->getResourceOwner($token);
+
+            $this->assertEquals($userId, $user->getId());
+            $this->assertEquals($userId, $user->toArray()['sub']);
+            $this->assertEquals($name, $user->getName());
+            $this->assertEquals($name, $user->toArray()['name']);
+            $this->assertEquals($email, $user->getEmail());
+            $this->assertEquals($email, $user->toArray()['email']);
+        }
+
+        public function testUserDataWithEncryption()
+        {
+            $userId = rand(1000,9999);
+            $name = uniqid();
+            $nickname = uniqid();
+            $email = uniqid();
+            $jwt = uniqid();
+            $algorithm = uniqid();
+            $key = uniqid();
+
+            $postResponse = m::mock('Psr\Http\Message\ResponseInterface');
+            $postResponse->shouldReceive('getBody')->andReturn('access_token=mock_access_token&expires=3600&refresh_token=mock_refresh_token&otherKey={1234}');
+            $postResponse->shouldReceive('getHeader')->andReturn(['content-type' => 'application/x-www-form-urlencoded']);
+
+            $userResponse = m::mock('Psr\Http\Message\ResponseInterface');
+            $userResponse->shouldReceive('getBody')->andReturn($jwt);
+            $userResponse->shouldReceive('getHeader')->andReturn(['content-type' => 'application/jwt']);
+
+            $decoder = \Mockery::mock('overload:Firebase\JWT\JWT');
+            $decoder->shouldReceive('decode')->with($jwt, $key, [$algorithm])->andReturn([
+                'sub' => $userId,
+                'email' => $email,
+                'name' => $name,
+            ]);
+
+            $client = m::mock('GuzzleHttp\ClientInterface');
+            $client->shouldReceive('send')
+                ->times(2)
+                ->andReturn($postResponse, $userResponse);
+            $this->provider->setHttpClient($client);
+
+            $token = $this->provider->setEncryptionAlgorithm($algorithm)
+                ->setEncryptionKey($key)
+                ->getAccessToken('authorization_code', ['code' => 'mock_authorization_code']);
+            $user = $this->provider->getResourceOwner($token);
+
+            $this->assertEquals($userId, $user->getId());
+            $this->assertEquals($userId, $user->toArray()['sub']);
+            $this->assertEquals($name, $user->getName());
+            $this->assertEquals($name, $user->toArray()['name']);
+            $this->assertEquals($email, $user->getEmail());
+            $this->assertEquals($email, $user->toArray()['email']);
+        }
+
+        /**
+         * @expectedException Stevenmaguire\OAuth2\Client\Provider\Exception\EncryptionConfigurationException
+         */
+        public function testUserDataFailsWhenEncryptionEncounteredAndNotConfigured()
+        {
+            $postResponse = m::mock('Psr\Http\Message\ResponseInterface');
+            $postResponse->shouldReceive('getBody')->andReturn('access_token=mock_access_token&expires=3600&refresh_token=mock_refresh_token&otherKey={1234}');
+            $postResponse->shouldReceive('getHeader')->andReturn(['content-type' => 'application/x-www-form-urlencoded']);
+
+            $userResponse = m::mock('Psr\Http\Message\ResponseInterface');
+            $userResponse->shouldReceive('getBody')->andReturn(uniqid());
+            $userResponse->shouldReceive('getHeader')->andReturn(['content-type' => 'application/jwt']);
+
+            $client = m::mock('GuzzleHttp\ClientInterface');
+            $client->shouldReceive('send')
+                ->times(2)
+                ->andReturn($postResponse, $userResponse);
+            $this->provider->setHttpClient($client);
+
+            $token = $this->provider->getAccessToken('authorization_code', ['code' => 'mock_authorization_code']);
+            $user = $this->provider->getResourceOwner($token);
+        }
+
+        /**
+         * @expectedException League\OAuth2\Client\Provider\Exception\IdentityProviderException
+         */
+        public function testErrorResponse()
+        {
+            $response = m::mock('Psr\Http\Message\ResponseInterface');
+            $response->shouldReceive('getBody')->andReturn('{"error": "invalid_grant", "error_description": "Code not found"}');
+            $response->shouldReceive('getHeader')->andReturn(['content-type' => 'json']);
+
+            $client = m::mock('GuzzleHttp\ClientInterface');
+            $client->shouldReceive('send')->times(1)->andReturn($response);
+            $this->provider->setHttpClient($client);
+
+            $token = $this->provider->getAccessToken('authorization_code', ['code' => 'mock_authorization_code']);
+        }
     }
 }
