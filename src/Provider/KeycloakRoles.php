@@ -58,6 +58,9 @@ class KeycloakRoles
     public function hasResourceNamed($name) {
         return $this->resourcesAndRoles != null && array_key_exists($name, $this->resourcesAndRoles);
     }
+    public function getResourceNamesFound() {
+        return array_keys($this->resourcesAndRoles);
+    }
 
     public function hasRealmRoleNamed($name) {
         return $this->realmAccess != null && in_array($name, $this->realmAccess);
