@@ -12,8 +12,8 @@ namespace Stevenmaguire\OAuth2\Client\Provider;
 class KeyCloakResourceRoles
 {
 
-    protected $resourceName;
-    protected $roles;
+    protected $resourceName = null;
+    protected $roles = null;
 
     /**
      * KeyCloakResourceRoles constructor.
@@ -34,5 +34,10 @@ class KeyCloakResourceRoles
         return $this->resourceName;
     }
 
-
+    public function hasRoleNamed($name) {
+        return $this->roles != null && in_array($name, $this->roles);
+    }
+    public function getRoles() {
+        return $this->roles;
+    }
 }
