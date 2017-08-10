@@ -46,6 +46,7 @@ class Keycloak extends AbstractProvider
      * @var string
      */
     public $encryptionKey = null;
+    protected $accessToken = null;
 
     /**
      * @var KeyCloakResourceRoles Any roles obtained from the access token.
@@ -73,8 +74,7 @@ class Keycloak extends AbstractProvider
     }
 
     /**
-     * The access token from keycloak includes role information which we now extract and make available via
-     * `getKeycloakRoles()`
+     * We need to cache the access token locally allowing for later optional post-processing by `checkForKeycloakRoles()`
      *
      * @param mixed $grant
      * @param array $options
@@ -82,11 +82,18 @@ class Keycloak extends AbstractProvider
      */
     public function getAccessToken($grant, array $options = [])
     {
-        $accessToken = parent::getAccessToken($grant, $options);
-        if ($this->encryptionKey != null && $this->encryptionAlgorithm != null) {
-            $this->keycloakRoles = new KeycloakRoles($accessToken, $this->encryptionKey, $this->encryptionAlgorithm);
+        $this->accessToken = parent::getAccessToken($grant, $options);
+        return $this->accessToken;
+    }
+
+    /**
+     * Check for Keycloak-supplied additional fields held by the access token which in turn is inside accessToken.
+     *
+     */
+    public function checkForKeycloakRoles() {
+        if ($this->accessToken != null && $this->encryptionKey != null && $this->encryptionAlgorithm != null) {
+            $this->keycloakRoles = KeycloakRoles::fromToken($this->accessToken, $this->encryptionKey, $this->encryptionAlgorithm);
         }
-        return $accessToken;
     }
 
     /**

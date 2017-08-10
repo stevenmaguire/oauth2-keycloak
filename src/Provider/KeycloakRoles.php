@@ -24,11 +24,14 @@ use League\OAuth2\Client\Token\AccessToken;
 class KeycloakRoles
 {
 
-    protected $realmAccess;
+    /**
+     * @var array a list of roles associated with the realm
+     */
+    protected $realmAccess = [];
     /**
      * @var array An associative array of KeyCloakResourceRoles keyed by resource name
      */
-    protected $resourcesAndRoles;
+    protected $resourcesAndRoles = [];
 
     /**
      * KeycloakRoles constructor.
@@ -36,23 +39,34 @@ class KeycloakRoles
      * Will decode the JWT access token hidden within this OAuth `AccessToken` yielding additional information
      * provided by KeyCloak.
      *
+     */
+    public function __construct($obj)
+    {
+        if (isset($obj->realm_access->roles)) {
+            $this->realmAccess = $obj->realm_access->roles;
+        }
+        if (isset($obj->resource_access)) {
+            foreach ($obj->resource_access as $resource => $roles) {
+                $list = [];
+                foreach ($roles->roles as $role) {
+                    $list[] = $role;
+                }
+                $resourceRoles = new KeyCloakResourceRoles($resource, $list);
+                $this->resourcesAndRoles[$resource] = $resourceRoles;
+            }
+        }
+    }
+
+    /**
+     *
      * @param AccessToken $accessToken The token received within which the `access_token` exists (yes, really)
      * @param string $encryptionKey For signature checking purposes
      * @param string $encryptionAlgorithm For signature checking purposes
+     * @return KeycloakRoles
      */
-    public function __construct(AccessToken $accessToken, $encryptionKey, $encryptionAlgorithm)
-    {
-        $obj = JWT::decode($accessToken->getToken(), $encryptionKey, $encryptionAlgorithm);
-        $this->realmAccess = $obj->realm_access;
-        $this->resourcesAndRoles = [];
-        foreach ($this->resource_access as $resource => $roles) {
-            $list = [];
-            foreach ($roles->roles as $role) {
-                $list[] = $role;
-            }
-            $resourceRoles = new KeyCloakResourceRoles($resource, $list);
-            $this->resourcesAndRoles[$resource] = $resourceRoles;
-        }
+    public static function fromToken(AccessToken $accessToken, $encryptionKey, $encryptionAlgorithm) {
+        $obj = JWT::decode($accessToken->getToken(), $encryptionKey, array($encryptionAlgorithm));
+        return new KeycloakRoles($obj);
     }
 
     public function hasResourceNamed($name) {
@@ -68,6 +82,11 @@ class KeycloakRoles
     public function getRealmRoles() {
         return $this->realmAccess;
     }
+
+    /**
+     * @param $name
+     * @return KeyCloakResourceRoles
+     */
     public function getRolesOfResourceNamed($name) {
         return $this->resourcesAndRoles[$name];
     }
