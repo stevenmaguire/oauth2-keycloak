@@ -47,7 +47,7 @@ class KeycloakRoles
         $this->resourcesAndRoles = [];
         foreach ($this->resource_access as $resource => $roles) {
             $list = [];
-            foreach ($roles as $role) {
+            foreach ($roles->roles as $role) {
                 $list[] = $role;
             }
             $resourceRoles = new KeyCloakResourceRoles($resource, $list);
@@ -63,7 +63,7 @@ class KeycloakRoles
     }
 
     public function hasRealmRoleNamed($name) {
-        return $this->realmAccess != null && in_array($name, $this->realmAccess);
+        return $this->realmAccess != null && in_array($name, $this->realmAccess->roles);
     }
     public function getRealmRoles() {
         return $this->realmAccess;
