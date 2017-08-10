@@ -49,7 +49,7 @@ class Keycloak extends AbstractProvider
     protected $accessToken = null;
 
     /**
-     * @var KeyCloakResourceRoles Any roles obtained from the access token.
+     * @var KeyCloakRoles Any roles obtained from the access token.
      */
     private $keycloakRoles = null;
 
@@ -97,7 +97,7 @@ class Keycloak extends AbstractProvider
     }
 
     /**
-     * @return KeyCloakResourceRoles
+     * @return KeyCloakRoles
      */
     public function getKeycloakRoles()
     {
