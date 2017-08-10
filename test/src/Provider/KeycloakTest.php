@@ -208,6 +208,7 @@ namespace Stevenmaguire\OAuth2\Client\Test\Provider
             $userResponse = m::mock('Psr\Http\Message\ResponseInterface');
             $userResponse->shouldReceive('getBody')->andReturn($jwt);
             $userResponse->shouldReceive('getHeader')->andReturn(['content-type' => 'application/jwt']);
+            $userResponse->shouldReceive('getStatusCode')->andReturn("200");
 
             $decoder = \Mockery::mock('overload:Firebase\JWT\JWT');
             $decoder->shouldReceive('decode')->with($jwt, $key, [$algorithm])->andReturn([
@@ -247,6 +248,7 @@ namespace Stevenmaguire\OAuth2\Client\Test\Provider
             $userResponse = m::mock('Psr\Http\Message\ResponseInterface');
             $userResponse->shouldReceive('getBody')->andReturn(uniqid());
             $userResponse->shouldReceive('getHeader')->andReturn(['content-type' => 'application/jwt']);
+            $userResponse->shouldReceive('getStatusCode')->andReturn("200");
 
             $client = m::mock('GuzzleHttp\ClientInterface');
             $client->shouldReceive('send')
