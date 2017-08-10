@@ -48,6 +48,11 @@ class Keycloak extends AbstractProvider
     public $encryptionKey = null;
 
     /**
+     * @var KeyCloakResourceRoles Any roles obtained from the access token.
+     */
+    private $keycloakRoles = null;
+
+    /**
      * Constructs an OAuth 2.0 service provider.
      *
      * @param array $options An array of options to set on this provider.
@@ -68,11 +73,36 @@ class Keycloak extends AbstractProvider
     }
 
     /**
+     * The access token from keycloak includes role information which we now extract and make available via
+     * `getKeycloakRoles()`
+     *
+     * @param mixed $grant
+     * @param array $options
+     * @return AccessToken
+     */
+    public function getAccessToken($grant, array $options = [])
+    {
+        $accessToken = parent::getAccessToken($grant, $options);
+        if ($this->encryptionKey != null && $this->encryptionAlgorithm != null) {
+            $this->keycloakRoles = new KeycloakRoles($accessToken, $this->encryptionKey, $this->encryptionAlgorithm);
+        }
+        return $accessToken;
+    }
+
+    /**
+     * @return KeyCloakResourceRoles
+     */
+    public function getKeycloakRoles()
+    {
+        return $this->keycloakRoles;
+    }
+
+    /**
      * Attempts to decrypt the given response.
      *
      * @param  string|array|null $response
-     *
-     * @return string|array|null
+     * @return array|null|string
+     * @throws EncryptionConfigurationException
      */
     public function decryptResponse($response)
     {
