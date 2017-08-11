@@ -70,7 +70,7 @@ class KeycloakEntitlements
      * @return bool
      */
     public function hasResourceSetId($id) {
-        if (! isset($this->data->authorizations->permissions)) {
+        if (! isset($this->data->authorization->permissions)) {
             return false;
         }
 
@@ -90,7 +90,7 @@ class KeycloakEntitlements
      * @return bool
      */
     public function hasResourceSetName($name) {
-        if (! isset($this->data->authorizations->permissions)) {
+        if (! isset($this->data->authorization->permissions)) {
             return false;
         }
 
@@ -104,14 +104,14 @@ class KeycloakEntitlements
     }
 
     /**
-     *
+     * 
      * @return array List of resource ids
      */
     public function listResourcesById() {
         $answer = [];
-
-        if (isset($this->data->authorizations->permissions)) {
-            foreach ($this->data->authorizations->permissions as $permission) {
+        
+        if (isset($this->data->authorization->permissions)) {
+            foreach ($this->data->authorization->permissions as $permission) {
                 $answer[] = $permission->resource_set_id;
             }
         }
@@ -126,8 +126,8 @@ class KeycloakEntitlements
     public function listResourcesByName() {
         $answer = [];
 
-        if (isset($this->data->authorizations->permissions)) {
-            foreach ($this->data->authorizations->permissions as $permission) {
+        if (isset($this->data->authorization->permissions)) {
+            foreach ($this->data->authorization->permissions as $permission) {
                 $answer[] = $permission->resource_set_name;
             }
         }

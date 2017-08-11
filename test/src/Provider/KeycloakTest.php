@@ -22,6 +22,7 @@ namespace Stevenmaguire\OAuth2\Client\Test\Provider
 {
     use League\OAuth2\Client\Tool\QueryBuilderTrait;
     use Mockery as m;
+    use Stevenmaguire\OAuth2\Client\Provider\KeycloakEntitlements;
     use Stevenmaguire\OAuth2\Client\Provider\KeycloakRoles;
 
     class KeycloakTest extends \PHPUnit_Framework_TestCase
@@ -308,6 +309,33 @@ namespace Stevenmaguire\OAuth2\Client\Test\Provider
             $this->assertEmpty($roles->getRealmRoles());
             $this->assertNotEmpty($roles->getResourceNamesFound());
             $this->assertArraySubset(['manage-account', 'manage-account-links', 'view-profile'], $roles->getRolesOfResourceNamed('account')->getRoles());
+        }
+
+        public function testEntitlementsNone() {
+            $obj = new \stdClass();
+            $entitlements = new KeycloakEntitlements($obj);
+            $this->assertEmpty($entitlements->listResourcesById());
+            $this->assertEmpty($entitlements->listResourcesByName());
+        }
+        public function testEntitlementsHasSome() {
+            $helloWorldA = new \stdClass();
+            $helloWorldA->resource_set_id = "d2fe9843-6462-4bfc-baba-b5787bb6e0e7";
+            $helloWorldA->resource_set_name = "Hello world A";
+
+            $helloWorldB = new \stdClass();
+            $helloWorldB->resource_set_id = "d2fe9843-6462-4bfc-baba-b5787bb6e0e8";
+            $helloWorldB->resource_set_name = "Hello world B";
+
+            $obj = new \stdClass();
+            $obj->authorization = new \stdClass();
+            $obj->authorization->permissions = [
+                $helloWorldA, $helloWorldB
+            ];
+            $entitlements = new KeycloakEntitlements($obj);
+            $this->assertNotEmpty($entitlements->listResourcesById());
+            $this->assertNotEmpty($entitlements->listResourcesByName());
+            $this->assertTrue($entitlements->hasResourceSetId('d2fe9843-6462-4bfc-baba-b5787bb6e0e7'));
+            $this->assertTrue($entitlements->hasResourceSetName('Hello world B'));
         }
     }
 }
