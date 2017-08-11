@@ -94,7 +94,7 @@ if (!isset($_GET['code'])) {
 
 ### Obtaining Realm Roles and Resources, and Roles within Realm Resources
 
-_Note: You need to supply your realm's RSA public key as the `encryptionKey` wrapped in standard `-----BEGIN PUBLIC KEY-----n` and `-----BEGIN PUBLIC KEY-----` lines along with the algorithm (try `RS256`) for this to work. See below for more information._
+_Note: You need to supply your realm's RSA public key as the `encryptionKey` wrapped in standard `-----BEGIN PUBLIC KEY-----` and `-----BEGIN PUBLIC KEY-----` lines along with the algorithm (try `RS256`) for this to work. See below for more information._
 
 Once you have a valid access token, you can check for the roles provided to the user:
 
@@ -131,9 +131,9 @@ The result of you granting access to Resources are Entitlements. To ask Keyloak 
 $entitlements = $provider->getEntitlements();
 ```
 
-This performs a one-time request to Keycloak using the access token previously obtained. Additional calls to this method will return a cached result for this user.
+This performs a one-time request to Keycloak using the access token previously obtained. Additional calls to this method will return a cached result for this user - *tip* in an interactive session-based site you will likely want to cache this result inside the session to avoid repeat round-trips across page views.
 
-The result can now be queries for individual Entitlements. Each Resource within Keycloak is named by you and gets a UUID.
+The result can now be queried for individual Entitlements. Each Resource within Keycloak is named by you and gets a UUID.
 
 You can now ask if the user has a specific named entitlement:
 
