@@ -46,6 +46,21 @@ class Keycloak extends AbstractProvider
      * @var string
      */
     public $encryptionKey = null;
+    /**
+     * Access Token once authenticated.
+     *
+     * @var AccessToken
+     */
+    protected $accessToken = null;
+
+    /**
+     * @var KeyCloakRoles Any roles obtained from the access token.
+     */
+    private $keycloakRoles = null;
+    /**
+     * @var KeycloakEntitlements
+     */
+    private $keycloakEntitlements = null;
 
     /**
      * Constructs an OAuth 2.0 service provider.
@@ -68,11 +83,60 @@ class Keycloak extends AbstractProvider
     }
 
     /**
+     * We need to cache the access token locally allowing for later optional post-processing by `checkForKeycloakRoles()`
+     *
+     * @param mixed $grant
+     * @param array $options
+     * @return AccessToken
+     */
+    public function getAccessToken($grant, array $options = [])
+    {
+        $this->accessToken = parent::getAccessToken($grant, $options);
+        return $this->accessToken;
+    }
+
+    /**
+     * Check for Keycloak-supplied additional fields held by the access token which in turn is inside accessToken.
+     *
+     */
+    public function checkForKeycloakRoles() {
+        if ($this->accessToken != null && $this->encryptionKey != null && $this->encryptionAlgorithm != null) {
+            $this->keycloakRoles = KeycloakRoles::fromToken($this->accessToken, $this->encryptionKey, $this->encryptionAlgorithm);
+        }
+    }
+
+    /**
+     * @return KeyCloakRoles
+     */
+    public function getKeycloakRoles()
+    {
+        return $this->keycloakRoles;
+    }
+
+    /**
+     * Obtain the entitlements (permissions) this authenticated user has for this resource (by client-id).
+     *
+     * This uses the Entitlement API offered by Keycloak.
+     * @return KeycloakEntitlements Entitlements in a convenient wrapper model
+     */
+    public function getEntitlements() {
+        if ($this->keycloakEntitlements == null) {
+            $request = $this->getAuthenticatedRequest('GET', $this->getEntitlementsUrl($this->accessToken), $this->accessToken, []);
+            $response = $this->getParsedResponse($request);
+            // Should have an rpt field
+            $entitlements = JWT::decode($response['rpt'], $this->encryptionKey, [$this->encryptionAlgorithm]);
+            $this->keycloakEntitlements = new KeycloakEntitlements($entitlements);
+        }
+
+        return $this->keycloakEntitlements;
+    }
+
+    /**
      * Attempts to decrypt the given response.
      *
      * @param  string|array|null $response
-     *
-     * @return string|array|null
+     * @return array|null|string
+     * @throws EncryptionConfigurationException
      */
     public function decryptResponse($response)
     {
@@ -135,6 +199,16 @@ class Keycloak extends AbstractProvider
     }
 
     /**
+     * Keycloak extension supporting entitlements.
+     *
+     * @param AccessToken $token
+     * @return string
+     */
+    public function getEntitlementsUrl(AccessToken $token) {
+        return $this->getBaseUrlWithRealm().'/authz/entitlement/'.$this->clientId;
+    }
+
+    /**
      * Creates base url from provider configuration.
      *
      * @return string
@@ -155,6 +229,15 @@ class Keycloak extends AbstractProvider
     protected function getDefaultScopes()
     {
         return ['name', 'email'];
+    }
+
+    protected function getAuthorizationHeaders($token = null)
+    {
+        $headers = parent::getAuthorizationHeaders($token);
+        if ($token != null) {
+            $headers['Authorization'] = 'Bearer ' . $token;
+        }
+        return $headers;
     }
 
     /**

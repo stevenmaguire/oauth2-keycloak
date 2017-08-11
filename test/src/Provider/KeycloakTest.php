@@ -22,10 +22,14 @@ namespace Stevenmaguire\OAuth2\Client\Test\Provider
 {
     use League\OAuth2\Client\Tool\QueryBuilderTrait;
     use Mockery as m;
+    use Stevenmaguire\OAuth2\Client\Provider\KeycloakEntitlements;
+    use Stevenmaguire\OAuth2\Client\Provider\KeycloakRoles;
 
     class KeycloakTest extends \PHPUnit_Framework_TestCase
     {
         use QueryBuilderTrait;
+
+        private $fullResponse;
 
         protected $provider;
 
@@ -208,6 +212,7 @@ namespace Stevenmaguire\OAuth2\Client\Test\Provider
             $userResponse = m::mock('Psr\Http\Message\ResponseInterface');
             $userResponse->shouldReceive('getBody')->andReturn($jwt);
             $userResponse->shouldReceive('getHeader')->andReturn(['content-type' => 'application/jwt']);
+            $userResponse->shouldReceive('getStatusCode')->andReturn("200");
 
             $decoder = \Mockery::mock('overload:Firebase\JWT\JWT');
             $decoder->shouldReceive('decode')->with($jwt, $key, [$algorithm])->andReturn([
@@ -247,6 +252,7 @@ namespace Stevenmaguire\OAuth2\Client\Test\Provider
             $userResponse = m::mock('Psr\Http\Message\ResponseInterface');
             $userResponse->shouldReceive('getBody')->andReturn(uniqid());
             $userResponse->shouldReceive('getHeader')->andReturn(['content-type' => 'application/jwt']);
+            $userResponse->shouldReceive('getStatusCode')->andReturn("200");
 
             $client = m::mock('GuzzleHttp\ClientInterface');
             $client->shouldReceive('send')
@@ -272,6 +278,64 @@ namespace Stevenmaguire\OAuth2\Client\Test\Provider
             $this->provider->setHttpClient($client);
 
             $token = $this->provider->getAccessToken('authorization_code', ['code' => 'mock_authorization_code']);
+        }
+
+        public function testRolesWithEmptyPayload() {
+            $obj = new \stdClass();
+
+            $roles = new KeycloakRoles($obj);
+            $this->assertEmpty($roles->getRealmRoles());
+            $this->assertEmpty($roles->getResourceNamesFound());
+        }
+
+        public function testRolesWithRealmRoles() {
+            $obj = new \stdClass();
+            $obj->realm_access = new \stdClass();
+            $obj->realm_access->roles = ['foo', 'bar'];
+
+            $roles = new KeycloakRoles($obj);
+            $this->assertNotEmpty($roles->getRealmRoles());
+            $this->assertArraySubset(['foo', 'bar'], $roles->getRealmRoles());
+            $this->assertEmpty($roles->getResourceNamesFound());
+        }
+
+        public function testRolesWithResourcesAndRoles() {
+            $obj = new \stdClass();
+            $obj->resource_access = new \stdClass();
+            $obj->resource_access->account = new \stdClass();
+            $obj->resource_access->account->roles = ['manage-account', 'manage-account-links', 'view-profile'];
+
+            $roles = new KeycloakRoles($obj);
+            $this->assertEmpty($roles->getRealmRoles());
+            $this->assertNotEmpty($roles->getResourceNamesFound());
+            $this->assertArraySubset(['manage-account', 'manage-account-links', 'view-profile'], $roles->getRolesOfResourceNamed('account')->getRoles());
+        }
+
+        public function testEntitlementsNone() {
+            $obj = new \stdClass();
+            $entitlements = new KeycloakEntitlements($obj);
+            $this->assertEmpty($entitlements->listResourcesById());
+            $this->assertEmpty($entitlements->listResourcesByName());
+        }
+        public function testEntitlementsHasSome() {
+            $helloWorldA = new \stdClass();
+            $helloWorldA->resource_set_id = "d2fe9843-6462-4bfc-baba-b5787bb6e0e7";
+            $helloWorldA->resource_set_name = "Hello world A";
+
+            $helloWorldB = new \stdClass();
+            $helloWorldB->resource_set_id = "d2fe9843-6462-4bfc-baba-b5787bb6e0e8";
+            $helloWorldB->resource_set_name = "Hello world B";
+
+            $obj = new \stdClass();
+            $obj->authorization = new \stdClass();
+            $obj->authorization->permissions = [
+                $helloWorldA, $helloWorldB
+            ];
+            $entitlements = new KeycloakEntitlements($obj);
+            $this->assertNotEmpty($entitlements->listResourcesById());
+            $this->assertNotEmpty($entitlements->listResourcesByName());
+            $this->assertTrue($entitlements->hasResourceSetId('d2fe9843-6462-4bfc-baba-b5787bb6e0e7'));
+            $this->assertTrue($entitlements->hasResourceSetName('Hello world B'));
         }
     }
 }
