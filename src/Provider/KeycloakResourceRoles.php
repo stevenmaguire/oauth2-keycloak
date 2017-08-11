@@ -9,14 +9,14 @@
 namespace Stevenmaguire\OAuth2\Client\Provider;
 
 
-class KeyCloakResourceRoles
+class KeycloakResourceRoles
 {
 
     protected $resourceName = null;
     protected $roles = null;
 
     /**
-     * KeyCloakResourceRoles constructor.
+     * KeycloakResourceRoles constructor.
      * @param string $resourceName Name of the resource
      * @param array $roles List of roles
      */

@@ -29,7 +29,7 @@ class KeycloakRoles
      */
     protected $realmAccess = [];
     /**
-     * @var array An associative array of KeyCloakResourceRoles keyed by resource name
+     * @var array An associative array of KeycloakResourceRoles keyed by resource name
      */
     protected $resourcesAndRoles = [];
 
@@ -51,7 +51,7 @@ class KeycloakRoles
                 foreach ($roles->roles as $role) {
                     $list[] = $role;
                 }
-                $resourceRoles = new KeyCloakResourceRoles($resource, $list);
+                $resourceRoles = new KeycloakResourceRoles($resource, $list);
                 $this->resourcesAndRoles[$resource] = $resourceRoles;
             }
         }
