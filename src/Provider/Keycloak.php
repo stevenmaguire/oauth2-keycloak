@@ -46,12 +46,21 @@ class Keycloak extends AbstractProvider
      * @var string
      */
     public $encryptionKey = null;
+    /**
+     * Access Token once authenticated.
+     *
+     * @var AccessToken
+     */
     protected $accessToken = null;
 
     /**
      * @var KeyCloakRoles Any roles obtained from the access token.
      */
     private $keycloakRoles = null;
+    /**
+     * @var KeycloakEntitlements
+     */
+    private $keycloakEntitlements = null;
 
     /**
      * Constructs an OAuth 2.0 service provider.
@@ -102,6 +111,24 @@ class Keycloak extends AbstractProvider
     public function getKeycloakRoles()
     {
         return $this->keycloakRoles;
+    }
+
+    /**
+     * Obtain the entitlements (permissions) this authenticated user has for this resource (by client-id).
+     *
+     * This uses the Entitlement API offered by Keycloak.
+     * @return KeycloakEntitlements Entitlements in a convenient wrapper model
+     */
+    public function getEntitlements() {
+        if ($this->keycloakEntitlements == null) {
+            $request = $this->getAuthenticatedRequest('GET', $this->getEntitlementsUrl($this->accessToken), $this->accessToken, []);
+            $response = $this->getParsedResponse($request);
+            // Should have an rpt field
+            $entitlements = JWT::decode($response['rpt'], $this->encryptionKey, [$this->encryptionAlgorithm]);
+            $this->keycloakEntitlements = new KeycloakEntitlements($entitlements);
+        }
+
+        return $this->keycloakEntitlements;
     }
 
     /**
@@ -172,6 +199,16 @@ class Keycloak extends AbstractProvider
     }
 
     /**
+     * Keycloak extension supporting entitlements.
+     *
+     * @param AccessToken $token
+     * @return string
+     */
+    public function getEntitlementsUrl(AccessToken $token) {
+        return $this->getBaseUrlWithRealm().'/authz/entitlement/'.$this->clientId;
+    }
+
+    /**
      * Creates base url from provider configuration.
      *
      * @return string
@@ -192,6 +229,15 @@ class Keycloak extends AbstractProvider
     protected function getDefaultScopes()
     {
         return ['name', 'email'];
+    }
+
+    protected function getAuthorizationHeaders($token = null)
+    {
+        $headers = parent::getAuthorizationHeaders($token);
+        if ($token != null) {
+            $headers['Authorization'] = 'Bearer ' . $token;
+        }
+        return $headers;
     }
 
     /**
