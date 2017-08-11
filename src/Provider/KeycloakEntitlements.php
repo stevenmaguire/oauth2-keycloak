@@ -103,4 +103,35 @@ class KeycloakEntitlements
         return false;
     }
 
+    /**
+     *
+     * @return array List of resource ids
+     */
+    public function listResourcesById() {
+        $answer = [];
+
+        if (isset($this->data->authorizations->permissions)) {
+            foreach ($this->data->authorizations->permissions as $permission) {
+                $answer[] = $permission->resource_set_id;
+            }
+        }
+
+        return $answer;
+    }
+
+    /**
+     *
+     * @return array List of resource names
+     */
+    public function listResourcesByName() {
+        $answer = [];
+
+        if (isset($this->data->authorizations->permissions)) {
+            foreach ($this->data->authorizations->permissions as $permission) {
+                $answer[] = $permission->resource_set_name;
+            }
+        }
+
+        return $answer;
+    }
 }
