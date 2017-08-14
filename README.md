@@ -167,6 +167,16 @@ $provider = new Stevenmaguire\OAuth2\Client\Provider\Keycloak([
 $token = $provider->getAccessToken('refresh_token', ['refresh_token' => $token->getRefreshToken()]);
 ```
 
+### Logging out
+
+1. Wipe any application local data (sessions, etc) about currently logged-in user
+2. Redirect the browser to log out of your Keycloak server (see below)
+
+```php
+$url = $provider->getLogoutUrl();
+header('Location: '.$url);
+```
+
 ### Handling encryption
 
 If you've configured your Keycloak instance to use encryption, there are some advanced options available to you.
