@@ -16,7 +16,7 @@ class KeycloakResourceOwner implements ResourceOwnerInterface
     /**
      * Creates new resource owner.
      *
-     * @param array  $response
+     * @param array $response
      */
     public function __construct(array $response = array())
     {

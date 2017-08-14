@@ -8,7 +8,6 @@
 
 namespace Stevenmaguire\OAuth2\Client\Provider;
 
-
 use Firebase\JWT\JWT;
 use League\OAuth2\Client\Token\AccessToken;
 
@@ -36,8 +35,7 @@ class KeycloakRoles
     /**
      * KeycloakRoles constructor.
      *
-     * Will decode the JWT access token hidden within this OAuth `AccessToken` yielding additional information
-     * provided by KeyCloak.
+     * @param $obj Object from JWT::decode
      *
      */
     public function __construct($obj)
@@ -57,29 +55,23 @@ class KeycloakRoles
         }
     }
 
-    /**
-     *
-     * @param AccessToken $accessToken The token received within which the `access_token` exists (yes, really)
-     * @param string $encryptionKey For signature checking purposes
-     * @param string $encryptionAlgorithm For signature checking purposes
-     * @return KeycloakRoles
-     */
-    public static function fromToken(AccessToken $accessToken, $encryptionKey, $encryptionAlgorithm) {
-        $obj = JWT::decode($accessToken->getToken(), $encryptionKey, array($encryptionAlgorithm));
-        return new KeycloakRoles($obj);
-    }
-
-    public function hasResourceNamed($name) {
+    public function hasResourceNamed($name)
+    {
         return $this->resourcesAndRoles != null && array_key_exists($name, $this->resourcesAndRoles);
     }
-    public function getResourceNamesFound() {
+
+    public function getResourceNamesFound()
+    {
         return array_keys($this->resourcesAndRoles);
     }
 
-    public function hasRealmRoleNamed($name) {
+    public function hasRealmRoleNamed($name)
+    {
         return $this->realmAccess != null && in_array($name, $this->realmAccess->roles);
     }
-    public function getRealmRoles() {
+
+    public function getRealmRoles()
+    {
         return $this->realmAccess;
     }
 
@@ -87,7 +79,8 @@ class KeycloakRoles
      * @param $name
      * @return KeyCloakResourceRoles
      */
-    public function getRolesOfResourceNamed($name) {
+    public function getRolesOfResourceNamed($name)
+    {
         return $this->resourcesAndRoles[$name];
     }
 }

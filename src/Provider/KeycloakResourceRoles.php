@@ -8,7 +8,6 @@
 
 namespace Stevenmaguire\OAuth2\Client\Provider;
 
-
 class KeycloakResourceRoles
 {
 
@@ -34,10 +33,13 @@ class KeycloakResourceRoles
         return $this->resourceName;
     }
 
-    public function hasRoleNamed($name) {
+    public function hasRoleNamed($name)
+    {
         return $this->roles != null && in_array($name, $this->roles);
     }
-    public function getRoles() {
+
+    public function getRoles()
+    {
         return $this->roles;
     }
 }

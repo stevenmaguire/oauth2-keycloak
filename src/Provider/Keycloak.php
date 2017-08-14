@@ -83,7 +83,8 @@ class Keycloak extends AbstractProvider
     }
 
     /**
-     * We need to cache the access token locally allowing for later optional post-processing by `checkForKeycloakRoles()`
+     * We need to cache the access token locally allowing for later optional post-processing
+     * by `checkForKeycloakRoles()`
      *
      * @param mixed $grant
      * @param array $options
@@ -98,33 +99,39 @@ class Keycloak extends AbstractProvider
     /**
      * Check for Keycloak-supplied additional fields held by the access token which in turn is inside accessToken.
      *
-     */
-    public function checkForKeycloakRoles() {
-        if ($this->accessToken != null && $this->encryptionKey != null && $this->encryptionAlgorithm != null) {
-            $this->keycloakRoles = KeycloakRoles::fromToken($this->accessToken, $this->encryptionKey, $this->encryptionAlgorithm);
-        }
-    }
-
-    /**
      * @return KeyCloakRoles
      */
     public function getKeycloakRoles()
     {
+        if ($this->accessToken != null && $this->encryptionKey != null && $this->encryptionAlgorithm != null) {
+            $obj = JWT::decode($this->accessToken, $this->encryptionKey, array($this->encryptionAlgorithm));
+            $this->keycloakRoles = new KeycloakRoles($obj);
+        }
         return $this->keycloakRoles;
     }
 
     /**
-     * Obtain the entitlements (permissions) this authenticated user has for this resource (by client-id).
+     * Obtain the Keycloak entitlements (permissions) this authenticated user has for this resource (by client-id).
      *
      * This uses the Entitlement API offered by Keycloak.
      * @return KeycloakEntitlements Entitlements in a convenient wrapper model
      */
-    public function getEntitlements() {
+    public function getKeycloakEntitlements()
+    {
         if ($this->keycloakEntitlements == null) {
-            $request = $this->getAuthenticatedRequest('GET', $this->getEntitlementsUrl($this->accessToken), $this->accessToken, []);
+            $request = $this->getAuthenticatedRequest(
+                'GET',
+                $this->getEntitlementsUrl($this->accessToken),
+                $this->accessToken,
+                []
+            );
             $response = $this->getParsedResponse($request);
             // Should have an rpt field
-            $entitlements = JWT::decode($response['rpt'], $this->encryptionKey, [$this->encryptionAlgorithm]);
+            $entitlements = JWT::decode(
+                $response['rpt'],
+                $this->encryptionKey,
+                [$this->encryptionAlgorithm]
+            );
             $this->keycloakEntitlements = new KeycloakEntitlements($entitlements);
         }
 
@@ -154,7 +161,7 @@ class Keycloak extends AbstractProvider
                 );
             } else {
                 throw new EncryptionConfigurationException(
-                    'The given response may be encrypted and sufficient '.
+                    'The given response may be encrypted and sufficient ' .
                     'encryption configuration has not been provided.',
                     400
                 );
@@ -171,7 +178,7 @@ class Keycloak extends AbstractProvider
      */
     public function getBaseAuthorizationUrl()
     {
-        return $this->getBaseUrlWithRealm().'/protocol/openid-connect/auth';
+        return $this->getBaseUrlWithRealm() . '/protocol/openid-connect/auth';
     }
 
     /**
@@ -183,7 +190,7 @@ class Keycloak extends AbstractProvider
      */
     public function getBaseAccessTokenUrl(array $params)
     {
-        return $this->getBaseUrlWithRealm().'/protocol/openid-connect/token';
+        return $this->getBaseUrlWithRealm() . '/protocol/openid-connect/token';
     }
 
     /**
@@ -195,7 +202,7 @@ class Keycloak extends AbstractProvider
      */
     public function getResourceOwnerDetailsUrl(AccessToken $token)
     {
-        return $this->getBaseUrlWithRealm().'/protocol/openid-connect/userinfo';
+        return $this->getBaseUrlWithRealm() . '/protocol/openid-connect/userinfo';
     }
 
     /**
@@ -204,8 +211,9 @@ class Keycloak extends AbstractProvider
      * @param AccessToken $token
      * @return string
      */
-    public function getEntitlementsUrl(AccessToken $token) {
-        return $this->getBaseUrlWithRealm().'/authz/entitlement/'.$this->clientId;
+    public function getEntitlementsUrl(AccessToken $token)
+    {
+        return $this->getBaseUrlWithRealm() . '/authz/entitlement/' . $this->clientId;
     }
 
     /**
@@ -215,7 +223,7 @@ class Keycloak extends AbstractProvider
      */
     protected function getBaseUrlWithRealm()
     {
-        return $this->authServerUrl.'/realms/'.$this->realm;
+        return $this->authServerUrl . '/realms/' . $this->realm;
     }
 
     /**
@@ -251,7 +259,7 @@ class Keycloak extends AbstractProvider
     protected function checkResponse(ResponseInterface $response, $data)
     {
         if (!empty($data['error'])) {
-            $error = $data['error'].': '.$data['error_description'];
+            $error = $data['error'] . ': ' . $data['error_description'];
             throw new IdentityProviderException($error, 0, $data);
         }
     }
@@ -286,7 +294,7 @@ class Keycloak extends AbstractProvider
     /**
      * Updates expected encryption algorithm of Keycloak instance.
      *
-     * @param string  $encryptionAlgorithm
+     * @param string $encryptionAlgorithm
      *
      * @return Keycloak
      */
@@ -300,7 +308,7 @@ class Keycloak extends AbstractProvider
     /**
      * Updates expected encryption key of Keycloak instance.
      *
-     * @param string  $encryptionKey
+     * @param string $encryptionKey
      *
      * @return Keycloak
      */
@@ -315,7 +323,7 @@ class Keycloak extends AbstractProvider
      * Updates expected encryption key of Keycloak instance to content of given
      * file path.
      *
-     * @param string  $encryptionKeyPath
+     * @param string $encryptionKeyPath
      *
      * @return Keycloak
      */
