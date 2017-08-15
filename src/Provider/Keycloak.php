@@ -263,15 +263,6 @@ class Keycloak extends AbstractProvider
         return ['name', 'email'];
     }
 
-    protected function getAuthorizationHeaders($token = null)
-    {
-        $headers = parent::getAuthorizationHeaders($token);
-        if ($token != null) {
-            $headers['Authorization'] = 'Bearer ' . $token;
-        }
-        return $headers;
-    }
-
     /**
      * Check a provider response for errors.
      *
