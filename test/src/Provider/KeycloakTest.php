@@ -131,6 +131,14 @@ namespace Stevenmaguire\OAuth2\Client\Test\Provider
             $this->assertEquals('/auth/realms/mock_realm/protocol/openid-connect/auth', $uri['path']);
         }
 
+        public function testGetLogoutUrl()
+        {
+            $url = $this->provider->getLogoutUrl();
+            $uri = parse_url($url);
+
+            $this->assertEquals('/auth/realms/mock_realm/protocol/openid-connect/logout', $uri['path']);
+        }
+
         public function testGetBaseAccessTokenUrl()
         {
             $params = [];
@@ -204,10 +212,12 @@ namespace Stevenmaguire\OAuth2\Client\Test\Provider
             $postResponse = m::mock('Psr\Http\Message\ResponseInterface');
             $postResponse->shouldReceive('getBody')->andReturn('access_token=mock_access_token&expires=3600&refresh_token=mock_refresh_token&otherKey={1234}');
             $postResponse->shouldReceive('getHeader')->andReturn(['content-type' => 'application/x-www-form-urlencoded']);
+            $postResponse->shouldReceive('getStatusCode')->andReturn(200);
 
             $userResponse = m::mock('Psr\Http\Message\ResponseInterface');
             $userResponse->shouldReceive('getBody')->andReturn($jwt);
             $userResponse->shouldReceive('getHeader')->andReturn(['content-type' => 'application/jwt']);
+            $userResponse->shouldReceive('getStatusCode')->andReturn(200);
 
             $decoder = \Mockery::mock('overload:Firebase\JWT\JWT');
             $decoder->shouldReceive('decode')->with($jwt, $key, [$algorithm])->andReturn([
@@ -243,10 +253,12 @@ namespace Stevenmaguire\OAuth2\Client\Test\Provider
             $postResponse = m::mock('Psr\Http\Message\ResponseInterface');
             $postResponse->shouldReceive('getBody')->andReturn('access_token=mock_access_token&expires=3600&refresh_token=mock_refresh_token&otherKey={1234}');
             $postResponse->shouldReceive('getHeader')->andReturn(['content-type' => 'application/x-www-form-urlencoded']);
+            $postResponse->shouldReceive('getStatusCode')->andReturn(200);
 
             $userResponse = m::mock('Psr\Http\Message\ResponseInterface');
             $userResponse->shouldReceive('getBody')->andReturn(uniqid());
             $userResponse->shouldReceive('getHeader')->andReturn(['content-type' => 'application/jwt']);
+            $userResponse->shouldReceive('getStatusCode')->andReturn(200);
 
             $client = m::mock('GuzzleHttp\ClientInterface');
             $client->shouldReceive('send')
