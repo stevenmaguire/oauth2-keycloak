@@ -147,28 +147,24 @@ class Keycloak extends AbstractProvider
      */
     public function decryptResponse($response)
     {
-        if (is_string($response)) {
-            if ($this->encryptionAlgorithm && $this->encryptionKey) {
-                $response = json_decode(
-                    json_encode(
-                        JWT::decode(
-                            $response,
-                            $this->encryptionKey,
-                            array($this->encryptionAlgorithm)
-                        )
-                    ),
-                    true
-                );
-            } else {
-                throw new EncryptionConfigurationException(
-                    'The given response may be encrypted and sufficient ' .
-                    'encryption configuration has not been provided.',
-                    400
-                );
-            }
+        if (!is_string($response)) {
+            return $response;
         }
 
-        return $response;
+        if ($this->usesEncryption()) {
+            return json_decode(
+                json_encode(
+                    JWT::decode(
+                        $response,
+                        $this->encryptionKey,
+                        array($this->encryptionAlgorithm)
+                    )
+                ),
+                true
+            );
+        }
+
+        throw EncryptionConfigurationException::undeterminedEncryption();
     }
 
     /**
@@ -238,6 +234,30 @@ class Keycloak extends AbstractProvider
     public function getEntitlementsUrl(AccessToken $token)
     {
         return $this->getBaseUrlWithRealm() . '/authz/entitlement/' . $this->clientId;
+    }
+
+    /**
+     * Builds the logout URL.
+     *
+     * @param array $options
+     * @return string Authorization URL
+     */
+    public function getLogoutUrl(array $options = [])
+    {
+        $base = $this->getBaseLogoutUrl();
+        $params = $this->getAuthorizationParameters($options);
+        $query = $this->getAuthorizationQuery($params);
+        return $this->appendQuery($base, $query);
+    }
+
+    /**
+     * Get logout url to logout of session token
+     *
+     * @return string
+     */
+    private function getBaseLogoutUrl()
+    {
+        return $this->getBaseUrlWithRealm() . '/protocol/openid-connect/logout';
     }
 
     /**
@@ -351,5 +371,15 @@ class Keycloak extends AbstractProvider
         }
 
         return $this;
+    }
+
+    /**
+     * Checks if provider is configured to use encryption.
+     *
+     * @return bool
+     */
+    public function usesEncryption()
+    {
+        return (bool) $this->encryptionAlgorithm && $this->encryptionKey;
     }
 }

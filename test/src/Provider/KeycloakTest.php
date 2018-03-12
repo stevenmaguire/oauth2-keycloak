@@ -11,6 +11,9 @@ namespace Stevenmaguire\OAuth2\Client\Provider
     {
         global $mockFileGetContents;
         if (isset($mockFileGetContents) && ! is_null($mockFileGetContents)) {
+            if (is_a($mockFileGetContents, 'Exception')) {
+                throw $mockFileGetContents;
+            }
             return $mockFileGetContents;
         } else {
             return call_user_func_array('\file_get_contents', func_get_args());
@@ -117,6 +120,20 @@ namespace Stevenmaguire\OAuth2\Client\Test\Provider
             $this->assertEquals($key, $provider->encryptionKey);
         }
 
+        public function testEncryptionKeyPathFails()
+        {
+            global $mockFileGetContents;
+            $path = uniqid();
+            $key = uniqid();
+            $mockFileGetContents = new \Exception();
+
+            $provider = new \Stevenmaguire\OAuth2\Client\Provider\Keycloak([
+                'encryptionKeyPath' => $path,
+            ]);
+
+            $provider->setEncryptionKeyPath($path);
+        }
+
         public function testScopes()
         {
             $scopeSeparator = ',';
@@ -133,6 +150,14 @@ namespace Stevenmaguire\OAuth2\Client\Test\Provider
             $uri = parse_url($url);
 
             $this->assertEquals('/auth/realms/mock_realm/protocol/openid-connect/auth', $uri['path']);
+        }
+
+        public function testGetLogoutUrl()
+        {
+            $url = $this->provider->getLogoutUrl();
+            $uri = parse_url($url);
+
+            $this->assertEquals('/auth/realms/mock_realm/protocol/openid-connect/logout', $uri['path']);
         }
 
         public function testGetBaseAccessTokenUrl()
@@ -208,11 +233,12 @@ namespace Stevenmaguire\OAuth2\Client\Test\Provider
             $postResponse = m::mock('Psr\Http\Message\ResponseInterface');
             $postResponse->shouldReceive('getBody')->andReturn('access_token=mock_access_token&expires=3600&refresh_token=mock_refresh_token&otherKey={1234}');
             $postResponse->shouldReceive('getHeader')->andReturn(['content-type' => 'application/x-www-form-urlencoded']);
+            $postResponse->shouldReceive('getStatusCode')->andReturn(200);
 
             $userResponse = m::mock('Psr\Http\Message\ResponseInterface');
             $userResponse->shouldReceive('getBody')->andReturn($jwt);
             $userResponse->shouldReceive('getHeader')->andReturn(['content-type' => 'application/jwt']);
-            $userResponse->shouldReceive('getStatusCode')->andReturn("200");
+            $userResponse->shouldReceive('getStatusCode')->andReturn(200);
 
             $decoder = \Mockery::mock('overload:Firebase\JWT\JWT');
             $decoder->shouldReceive('decode')->with($jwt, $key, [$algorithm])->andReturn([
@@ -248,11 +274,12 @@ namespace Stevenmaguire\OAuth2\Client\Test\Provider
             $postResponse = m::mock('Psr\Http\Message\ResponseInterface');
             $postResponse->shouldReceive('getBody')->andReturn('access_token=mock_access_token&expires=3600&refresh_token=mock_refresh_token&otherKey={1234}');
             $postResponse->shouldReceive('getHeader')->andReturn(['content-type' => 'application/x-www-form-urlencoded']);
+            $postResponse->shouldReceive('getStatusCode')->andReturn(200);
 
             $userResponse = m::mock('Psr\Http\Message\ResponseInterface');
             $userResponse->shouldReceive('getBody')->andReturn(uniqid());
             $userResponse->shouldReceive('getHeader')->andReturn(['content-type' => 'application/jwt']);
-            $userResponse->shouldReceive('getStatusCode')->andReturn("200");
+            $userResponse->shouldReceive('getStatusCode')->andReturn(200);
 
             $client = m::mock('GuzzleHttp\ClientInterface');
             $client->shouldReceive('send')
