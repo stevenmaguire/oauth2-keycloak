@@ -76,28 +76,24 @@ class Keycloak extends AbstractProvider
      */
     public function decryptResponse($response)
     {
-        if (is_string($response)) {
-            if ($this->encryptionAlgorithm && $this->encryptionKey) {
-                $response = json_decode(
-                    json_encode(
-                        JWT::decode(
-                            $response,
-                            $this->encryptionKey,
-                            array($this->encryptionAlgorithm)
-                        )
-                    ),
-                    true
-                );
-            } else {
-                throw new EncryptionConfigurationException(
-                    'The given response may be encrypted and sufficient '.
-                    'encryption configuration has not been provided.',
-                    400
-                );
-            }
+        if (!is_string($response)) {
+            return $response;
         }
 
-        return $response;
+        if ($this->usesEncryption()) {
+            return json_decode(
+                json_encode(
+                    JWT::decode(
+                        $response,
+                        $this->encryptionKey,
+                        array($this->encryptionAlgorithm)
+                    )
+                ),
+                true
+            );
+        }
+
+        throw EncryptionConfigurationException::undeterminedEncryption();
     }
 
     /**
@@ -269,5 +265,15 @@ class Keycloak extends AbstractProvider
         }
 
         return $this;
+    }
+
+    /**
+     * Checks if provider is configured to use encryption.
+     *
+     * @return bool
+     */
+    public function usesEncryption()
+    {
+        return (bool) $this->encryptionAlgorithm && $this->encryptionKey;
     }
 }
