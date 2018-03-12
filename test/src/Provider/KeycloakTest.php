@@ -11,6 +11,9 @@ namespace Stevenmaguire\OAuth2\Client\Provider
     {
         global $mockFileGetContents;
         if (isset($mockFileGetContents) && ! is_null($mockFileGetContents)) {
+            if (is_a($mockFileGetContents, 'Exception')) {
+                throw $mockFileGetContents;
+            }
             return $mockFileGetContents;
         } else {
             return call_user_func_array('\file_get_contents', func_get_args());
@@ -111,6 +114,20 @@ namespace Stevenmaguire\OAuth2\Client\Test\Provider
             $provider->setEncryptionKeyPath($path);
 
             $this->assertEquals($key, $provider->encryptionKey);
+        }
+
+        public function testEncryptionKeyPathFails()
+        {
+            global $mockFileGetContents;
+            $path = uniqid();
+            $key = uniqid();
+            $mockFileGetContents = new \Exception();
+
+            $provider = new \Stevenmaguire\OAuth2\Client\Provider\Keycloak([
+                'encryptionKeyPath' => $path,
+            ]);
+
+            $provider->setEncryptionKeyPath($path);
         }
 
         public function testScopes()
