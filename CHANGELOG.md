@@ -13,7 +13,7 @@ All Notable changes to `oauth2-keycloak` will be documented in this file
 - Nothing
 
 ### Removed
-- PHP 5.5 Support
+- Nothing
 
 ### Security
 - Nothing
