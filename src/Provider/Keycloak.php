@@ -135,6 +135,30 @@ class Keycloak extends AbstractProvider
     }
 
     /**
+     * Builds the logout URL.
+     *
+     * @param array $options
+     * @return string Authorization URL
+     */
+    public function getLogoutUrl(array $options = [])
+    {
+        $base = $this->getBaseLogoutUrl();
+        $params = $this->getAuthorizationParameters($options);
+        $query = $this->getAuthorizationQuery($params);
+        return $this->appendQuery($base, $query);
+    }
+
+    /**
+     * Get logout url to logout of session token
+     *
+     * @return string
+     */
+    private function getBaseLogoutUrl()
+    {
+        return $this->getBaseUrlWithRealm() . '/protocol/openid-connect/logout';
+    }
+
+    /**
      * Creates base url from provider configuration.
      *
      * @return string
