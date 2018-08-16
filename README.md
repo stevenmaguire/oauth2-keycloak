@@ -72,6 +72,11 @@ if (!isset($_GET['code'])) {
         // Use these details to create a new profile
         printf('Hello %s!', $user->getName());
 
+        // Or get more information with token Introspection
+        $user = $provider->getResourceOwnerFromIntrospectedToken($token);
+        // Use these details for user roles
+        echo '<pre>'. var_export($user->toArray()["realm_access"]).'</pre>';
+        
     } catch (Exception $e) {
         exit('Failed to get resource owner: '.$e->getMessage());
     }
