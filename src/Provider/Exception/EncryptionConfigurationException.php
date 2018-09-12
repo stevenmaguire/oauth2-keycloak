@@ -1,6 +1,6 @@
 <?php
 
-namespace Stevenmaguire\OAuth2\Client\Provider\Exception;
+namespace Gkasse\OAuth2\Client\Provider\Exception;
 
 use Exception;
 
@@ -9,7 +9,7 @@ class EncryptionConfigurationException extends Exception
     /**
      * Returns properly formatted exception when response decryption fails.
      *
-     * @return \Stevenmaguire\OAuth2\Client\Provider\Exception\EncryptionConfigurationException
+     * @return EncryptionConfigurationException
      */
     public static function undeterminedEncryption()
     {
