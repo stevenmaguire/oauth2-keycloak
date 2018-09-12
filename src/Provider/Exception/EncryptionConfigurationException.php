@@ -9,7 +9,7 @@ class EncryptionConfigurationException extends Exception
     /**
      * Returns properly formatted exception when response decryption fails.
      *
-     * @return EncryptionConfigurationException
+     * @return \Gkasse\OAuth2\Client\Provider\Exception\EncryptionConfigurationException
      */
     public static function undeterminedEncryption()
     {

@@ -23,7 +23,6 @@ namespace Gkasse\OAuth2\Client\Provider
 
 namespace Gkasse\OAuth2\Client\Test\Provider
 {
-
     use League\OAuth2\Client\Tool\QueryBuilderTrait;
     use Mockery as m;
 
