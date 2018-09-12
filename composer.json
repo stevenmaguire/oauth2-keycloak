@@ -1,12 +1,11 @@
 {
-    "name": "stevenmaguire/oauth2-keycloak",
+    "name": "gkasse/oauth2-keycloak",
     "description": "Keycloak OAuth 2.0 Client Provider for The PHP League OAuth2-Client",
     "license": "MIT",
     "authors": [
         {
-            "name": "Steven Maguire",
-            "email": "stevenmaguire@gmail.com",
-            "homepage": "https://github.com/stevenmaguire"
+            "name": "gkasse",
+            "homepage": "https://github.com/gkasse"
         }
     ],
     "keywords": [
@@ -28,17 +27,25 @@
     },
     "autoload": {
         "psr-4": {
-            "Stevenmaguire\\OAuth2\\Client\\": "src/"
+            "Gkasse\\OAuth2\\Client\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "Stevenmaguire\\OAuth2\\Client\\Test\\": "test/src/"
+            "Gkasse\\OAuth2\\Client\\Test\\": "test/src/"
         }
     },
     "extra": {
         "branch-alias": {
             "dev-master": "1.0.x-dev"
         }
+    },
+    "scripts": {
+        "code-sniffer": [
+            "phpcs --standard=psr2 src/"
+        ],
+        "test": [
+            "phpunit --coverage-text --coverage-clover=coverage.clover"
+        ]
     }
 }

@@ -4,7 +4,7 @@ require 'vendor/autoload.php';
 
 session_start();
 
-$provider = new Stevenmaguire\OAuth2\Client\Provider\Keycloak([
+$provider = new Gkasse\OAuth2\Client\Provider\Keycloak([
     'authServerUrl'             => '',
     'realm'                     => '',
     'clientId'                  => '',

@@ -1,6 +1,6 @@
 <?php
 
-namespace Stevenmaguire\OAuth2\Client\Provider;
+namespace Gkasse\OAuth2\Client\Provider;
 
 use League\OAuth2\Client\Provider\ResourceOwnerInterface;
 
