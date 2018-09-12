@@ -5,7 +5,7 @@ namespace
     $mockFileGetContents = null;
 }
 
-namespace Stevenmaguire\OAuth2\Client\Provider
+namespace Gkasse\OAuth2\Client\Provider
 {
     function file_get_contents()
     {
@@ -21,8 +21,9 @@ namespace Stevenmaguire\OAuth2\Client\Provider
     }
 }
 
-namespace Stevenmaguire\OAuth2\Client\Test\Provider
+namespace Gkasse\OAuth2\Client\Test\Provider
 {
+
     use League\OAuth2\Client\Tool\QueryBuilderTrait;
     use Mockery as m;
 
@@ -34,7 +35,7 @@ namespace Stevenmaguire\OAuth2\Client\Test\Provider
 
         protected function setUp()
         {
-            $this->provider = new \Stevenmaguire\OAuth2\Client\Provider\Keycloak([
+            $this->provider = new \Gkasse\OAuth2\Client\Provider\Keycloak([
                 'authServerUrl' => 'http://mock.url/auth',
                 'realm' => 'mock_realm',
                 'clientId' => 'mock_client_id',
@@ -67,7 +68,7 @@ namespace Stevenmaguire\OAuth2\Client\Test\Provider
         public function testEncryptionAlgorithm()
         {
             $algorithm = uniqid();
-            $provider = new \Stevenmaguire\OAuth2\Client\Provider\Keycloak([
+            $provider = new \Gkasse\OAuth2\Client\Provider\Keycloak([
                 'encryptionAlgorithm' => $algorithm,
             ]);
 
@@ -82,7 +83,7 @@ namespace Stevenmaguire\OAuth2\Client\Test\Provider
         public function testEncryptionKey()
         {
             $key = uniqid();
-            $provider = new \Stevenmaguire\OAuth2\Client\Provider\Keycloak([
+            $provider = new \Gkasse\OAuth2\Client\Provider\Keycloak([
                 'encryptionKey' => $key,
             ]);
 
@@ -101,7 +102,7 @@ namespace Stevenmaguire\OAuth2\Client\Test\Provider
             $key = uniqid();
             $mockFileGetContents = $key;
 
-            $provider = new \Stevenmaguire\OAuth2\Client\Provider\Keycloak([
+            $provider = new \Gkasse\OAuth2\Client\Provider\Keycloak([
                 'encryptionKeyPath' => $path,
             ]);
 
@@ -123,7 +124,7 @@ namespace Stevenmaguire\OAuth2\Client\Test\Provider
             $key = uniqid();
             $mockFileGetContents = new \Exception();
 
-            $provider = new \Stevenmaguire\OAuth2\Client\Provider\Keycloak([
+            $provider = new \Gkasse\OAuth2\Client\Provider\Keycloak([
                 'encryptionKeyPath' => $path,
             ]);
 
@@ -263,7 +264,7 @@ namespace Stevenmaguire\OAuth2\Client\Test\Provider
         }
 
         /**
-         * @expectedException Stevenmaguire\OAuth2\Client\Provider\Exception\EncryptionConfigurationException
+         * @expectedException Gkasse\OAuth2\Client\Provider\Exception\EncryptionConfigurationException
          */
         public function testUserDataFailsWhenEncryptionEncounteredAndNotConfigured()
         {
