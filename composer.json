@@ -39,5 +39,13 @@
         "branch-alias": {
             "dev-master": "1.0.x-dev"
         }
+    },
+    "scripts": {
+        "code-sniffer": [
+            "phpcs --standard=psr2 src/"
+        ],
+        "test": [
+            "phpunit --coverage-text --coverage-clover=coverage.clover"
+        ]
     }
 }

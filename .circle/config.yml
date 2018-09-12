@@ -1,0 +1,27 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: circleci/php:7.1-fpm-node-browsers-legacy
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - restore_cache:
+        keys:
+          - v1-dependencies-{{ checksum "composer.json" }}
+      - run:
+          name: Resolve dependencies
+          command: |
+            composer install --no-interaction --prefer-source --dev
+      - save_cache:
+          paths:
+            - ./vendor
+          key: v1-dependencies-{{ checksum "composer.json" }}
+      - run:
+          name: Sniffing the code
+          command: |
+            composer code-sniffer
+      - run:
+          name: Test
+          command: |
+            composer test
