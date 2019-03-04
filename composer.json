@@ -1,5 +1,5 @@
 {
-    "name": "stevenmaguire/oauth2-keycloak",
+    "name": "notedopjes/oauth2-keycloak",
     "description": "Keycloak OAuth 2.0 Client Provider for The PHP League OAuth2-Client",
     "license": "MIT",
     "authors": [
@@ -7,6 +7,11 @@
             "name": "Steven Maguire",
             "email": "stevenmaguire@gmail.com",
             "homepage": "https://github.com/stevenmaguire"
+        },
+        {
+            "name": "Marc Wijma",
+            "email": "info@tie-it.nl",
+            "homepage": "https://github.com/notedopjes"
         }
     ],
     "keywords": [
@@ -18,8 +23,8 @@
         "keycloak"
     ],
     "require": {
-        "league/oauth2-client": "^2.0 <2.3.0",
-        "firebase/php-jwt": "^4.0"
+        "league/oauth2-client": "^2.0",
+		"firebase/php-jwt": "^4.0"
     },
     "require-dev": {
         "phpunit/phpunit": "~4.0",
