@@ -10,6 +10,7 @@ use League\OAuth2\Client\Token\AccessToken;
 use League\OAuth2\Client\Tool\BearerAuthorizationTrait;
 use Psr\Http\Message\ResponseInterface;
 use Stevenmaguire\OAuth2\Client\Provider\Exception\EncryptionConfigurationException;
+use Stevenmaguire\OAuth2\Client\Provider\Exception\EncryptionKeyPathNotFoundException;
 
 class Keycloak extends AbstractProvider
 {
@@ -252,16 +253,18 @@ class Keycloak extends AbstractProvider
      * Updates expected encryption key of Keycloak instance to content of given
      * file path.
      *
-     * @param string  $encryptionKeyPath
+     * @param string $encryptionKeyPath
      *
      * @return Keycloak
+     * @throws EncryptionKeyPathNotFoundException
      */
     public function setEncryptionKeyPath($encryptionKeyPath)
     {
         try {
             $this->encryptionKey = file_get_contents($encryptionKeyPath);
-        } catch (Exception $e) {
-            // Not sure how to handle this yet.
+        } catch (\Throwable $e) {
+            $message = 'Could not find the encryption key path: "'. $encryptionKeyPath . '"';
+            throw new EncryptionKeyPathNotFoundException($message, 0, $e);
         }
 
         return $this;

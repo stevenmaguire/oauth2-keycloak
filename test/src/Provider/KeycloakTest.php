@@ -117,11 +117,13 @@ namespace Stevenmaguire\OAuth2\Client\Test\Provider
             $this->assertEquals($key, $provider->encryptionKey);
         }
 
+        /**
+         * @expectedException Stevenmaguire\OAuth2\Client\Provider\Exception\EncryptionKeyPathNotFoundException
+         */
         public function testEncryptionKeyPathFails()
         {
             global $mockFileGetContents;
             $path = uniqid();
-            $key = uniqid();
             $mockFileGetContents = new \Exception();
 
             $provider = new \Stevenmaguire\OAuth2\Client\Provider\Keycloak([
