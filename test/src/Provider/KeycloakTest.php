@@ -33,7 +33,7 @@ namespace Stevenmaguire\OAuth2\Client\Test\Provider
 
         protected $provider;
 
-        protected function setUp()
+        protected function setUp(): void
         {
             $this->provider = new \Stevenmaguire\OAuth2\Client\Provider\Keycloak([
                 'authServerUrl' => 'http://mock.url/auth',
@@ -44,7 +44,7 @@ namespace Stevenmaguire\OAuth2\Client\Test\Provider
             ]);
         }
 
-        public function tearDown()
+        public function tearDown(): void
         {
             m::close();
             parent::tearDown();

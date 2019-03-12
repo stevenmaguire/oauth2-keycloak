@@ -2,7 +2,6 @@
 
 namespace Stevenmaguire\OAuth2\Client\Provider;
 
-use Exception;
 use Firebase\JWT\JWT;
 use League\OAuth2\Client\Provider\AbstractProvider;
 use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
@@ -59,6 +58,7 @@ class Keycloak extends AbstractProvider
      *     override this provider's default behavior. Collaborators include
      *     `grantFactory`, `requestFactory`, `httpClient`, and `randomFactory`.
      *     Individual providers may introduce more collaborators, as needed.
+     * @throws EncryptionKeyPathNotFoundException
      */
     public function __construct(array $options = [], array $collaborators = [])
     {
@@ -75,6 +75,7 @@ class Keycloak extends AbstractProvider
      * @param  string|array|null $response
      *
      * @return string|array|null
+     * @throws EncryptionConfigurationException
      */
     public function decryptResponse($response)
     {
@@ -189,7 +190,7 @@ class Keycloak extends AbstractProvider
      */
     protected function checkResponse(ResponseInterface $response, $data)
     {
-        if (!empty($data['error'])) {
+        if (is_array($data) && !empty($data['error'])) {
             $error = $data['error'].': '.$data['error_description'];
             throw new IdentityProviderException($error, 0, $data);
         }
