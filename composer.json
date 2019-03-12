@@ -18,6 +18,7 @@
         "keycloak"
     ],
     "require": {
+        "php": "^7.1",
         "league/oauth2-client": "^2.0 <2.3.0",
         "firebase/php-jwt": "^4.0"
     },

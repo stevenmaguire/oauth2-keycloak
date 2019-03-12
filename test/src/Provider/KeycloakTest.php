@@ -11,7 +11,7 @@ namespace Stevenmaguire\OAuth2\Client\Provider
     {
         global $mockFileGetContents;
         if (isset($mockFileGetContents) && ! is_null($mockFileGetContents)) {
-            if (is_a($mockFileGetContents, 'Exception')) {
+            if($mockFileGetContents instanceof \Throwable){
                 throw $mockFileGetContents;
             }
             return $mockFileGetContents;
