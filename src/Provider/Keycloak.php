@@ -10,6 +10,7 @@ use League\OAuth2\Client\Token\AccessToken;
 use League\OAuth2\Client\Tool\BearerAuthorizationTrait;
 use Psr\Http\Message\ResponseInterface;
 use Stevenmaguire\OAuth2\Client\Provider\Exception\EncryptionConfigurationException;
+use UnexpectedValueException;
 
 class Keycloak extends AbstractProvider
 {
@@ -210,10 +211,15 @@ class Keycloak extends AbstractProvider
      *
      * @param  AccessToken $token
      * @return KeycloakResourceOwner
+     * @throws EncryptionConfigurationException
      */
     public function getResourceOwner(AccessToken $token)
     {
         $response = $this->fetchResourceOwnerDetails($token);
+
+        if (array_key_exists('jwt', $response)) {
+            $response = $response['jwt'];
+        }
 
         $response = $this->decryptResponse($response);
 
@@ -275,5 +281,23 @@ class Keycloak extends AbstractProvider
     public function usesEncryption()
     {
         return (bool) $this->encryptionAlgorithm && $this->encryptionKey;
+    }
+
+    /**
+     * Parses the response according to its content-type header.
+     *
+     * @throws UnexpectedValueException
+     * @param  ResponseInterface $response
+     * @return array
+     */
+    protected function parseResponse(ResponseInterface $response)
+    {
+        $content = (string) $response->getBody();
+        $type = $this->getContentType($response);
+        if (strpos($type, 'jwt') !== false) {
+            return ['jwt' => $content];
+        }
+
+        return parent::parseResponse($response);
     }
 }
