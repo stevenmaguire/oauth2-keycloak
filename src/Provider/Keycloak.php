@@ -15,6 +15,8 @@ class Keycloak extends AbstractProvider
 {
     use BearerAuthorizationTrait;
 
+    const OPEN_ID_PROTOCOL_URI = '/protocol/openid-connect/';
+
     /**
      * Keycloak URL, eg. http://localhost:8080/auth.
      *
@@ -73,6 +75,8 @@ class Keycloak extends AbstractProvider
      * @param  string|array|null $response
      *
      * @return string|array|null
+     *
+     * @throws EncryptionConfigurationException
      */
     public function decryptResponse($response)
     {
@@ -103,7 +107,7 @@ class Keycloak extends AbstractProvider
      */
     public function getBaseAuthorizationUrl()
     {
-        return $this->getBaseUrlWithRealm().'/protocol/openid-connect/auth';
+        return $this->buildOpenIdConnectUrl('auth');
     }
 
     /**
@@ -115,7 +119,7 @@ class Keycloak extends AbstractProvider
      */
     public function getBaseAccessTokenUrl(array $params)
     {
-        return $this->getBaseUrlWithRealm().'/protocol/openid-connect/token';
+        return $this->buildOpenIdConnectUrl('token');
     }
 
     /**
@@ -127,7 +131,7 @@ class Keycloak extends AbstractProvider
      */
     public function getResourceOwnerDetailsUrl(AccessToken $token)
     {
-        return $this->getBaseUrlWithRealm().'/protocol/openid-connect/userinfo';
+        return $this->buildOpenIdConnectUrl('userinfo');
     }
 
     /**
@@ -138,10 +142,12 @@ class Keycloak extends AbstractProvider
      */
     public function getLogoutUrl(array $options = [])
     {
-        $base = $this->getBaseLogoutUrl();
-        $params = $this->getAuthorizationParameters($options);
-        $query = $this->getAuthorizationQuery($params);
-        return $this->appendQuery($base, $query);
+        return $this->appendQuery(
+            $this->getBaseLogoutUrl(),
+            $this->getAuthorizationQuery(
+                $this->getAuthorizationParameters($options)
+            )
+        );
     }
 
     /**
@@ -151,7 +157,7 @@ class Keycloak extends AbstractProvider
      */
     private function getBaseLogoutUrl()
     {
-        return $this->getBaseUrlWithRealm() . '/protocol/openid-connect/logout';
+        return $this->buildOpenIdConnectUrl('logout');
     }
 
     /**
@@ -182,14 +188,17 @@ class Keycloak extends AbstractProvider
      *
      * @throws IdentityProviderException
      * @param  ResponseInterface $response
-     * @param  string $data Parsed response data
+     * @param  string|array $data Parsed response data
      * @return void
      */
     protected function checkResponse(ResponseInterface $response, $data)
     {
-        if (!empty($data['error'])) {
-            $error = $data['error'].': '.$data['error_description'];
-            throw new IdentityProviderException($error, 0, $data);
+        if (\is_array($data) && !empty($data['error'])) {
+            throw new IdentityProviderException(
+                \sprintf('%s: %s', $data['error'], $data['error_description']),
+                0,
+                $data
+            );
         }
     }
 
@@ -208,8 +217,11 @@ class Keycloak extends AbstractProvider
     /**
      * Requests and returns the resource owner of given access token.
      *
-     * @param  AccessToken $token
+     * @param AccessToken $token
+     *
      * @return KeycloakResourceOwner
+     *
+     * @throws EncryptionConfigurationException
      */
     public function getResourceOwner(AccessToken $token)
     {
@@ -275,5 +287,15 @@ class Keycloak extends AbstractProvider
     public function usesEncryption()
     {
         return (bool) $this->encryptionAlgorithm && $this->encryptionKey;
+    }
+
+    /**
+     * @param string $uriPostfix
+     *
+     * @return string
+     */
+    private function buildOpenIdConnectUrl($uriPostfix)
+    {
+        return $this->getBaseUrlWithRealm() . self::OPEN_ID_PROTOCOL_URI . $uriPostfix;
     }
 }
