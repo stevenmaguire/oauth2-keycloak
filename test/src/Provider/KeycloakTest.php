@@ -25,8 +25,9 @@ namespace Stevenmaguire\OAuth2\Client\Test\Provider
 {
     use League\OAuth2\Client\Tool\QueryBuilderTrait;
     use Mockery as m;
+	use PHPUnit\Framework\TestCase;
 
-    class KeycloakTest extends \PHPUnit_Framework_TestCase
+	class KeycloakTest extends TestCase
     {
         use QueryBuilderTrait;
 
@@ -128,6 +129,8 @@ namespace Stevenmaguire\OAuth2\Client\Test\Provider
             ]);
 
             $provider->setEncryptionKeyPath($path);
+
+            $this->assertNotEquals($key, $provider->encryptionKey);
         }
 
         public function testScopes()
