@@ -200,7 +200,10 @@ class Keycloak extends AbstractProvider
     protected function checkResponse(ResponseInterface $response, $data)
     {
         if (!empty($data['error'])) {
-            $error = $data['error'].': '.$data['error_description'];
+            $error = $data['error'];
+            if(isset($data['error_description'])){
+                $error.=': '.$data['error_description'];
+            }
             throw new IdentityProviderException($error, 0, $data);
         }
     }
