@@ -512,7 +512,9 @@ EOF;
                 ->andReturn($accessTokenResponseStream);
             $response
                 ->shouldReceive('getHeader')
-                ->andReturn(['content-type' => 'json']);
+            $response
+                ->shouldReceive('getStatusCode')
+                ->andReturn(401);
 
             $client = m::mock('GuzzleHttp\ClientInterface');
             $client
