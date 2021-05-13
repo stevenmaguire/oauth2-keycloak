@@ -295,6 +295,7 @@ namespace Stevenmaguire\OAuth2\Client\Test\Provider
             $response = m::mock('Psr\Http\Message\ResponseInterface');
             $response->shouldReceive('getBody')->andReturn('{"error": "invalid_grant", "error_description": "Code not found"}');
             $response->shouldReceive('getHeader')->andReturn(['content-type' => 'json']);
+            $response->shouldReceive('getStatusCode')->andReturn(401);
 
             $client = m::mock('GuzzleHttp\ClientInterface');
             $client->shouldReceive('send')->times(1)->andReturn($response);
