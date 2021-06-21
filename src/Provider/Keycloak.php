@@ -10,6 +10,7 @@ use League\OAuth2\Client\Token\AccessToken;
 use League\OAuth2\Client\Tool\BearerAuthorizationTrait;
 use Psr\Http\Message\ResponseInterface;
 use Stevenmaguire\OAuth2\Client\Provider\Exception\EncryptionConfigurationException;
+use UnexpectedValueException;
 
 class Keycloak extends AbstractProvider
 {
@@ -222,10 +223,17 @@ class Keycloak extends AbstractProvider
      *
      * @param  AccessToken $token
      * @return KeycloakResourceOwner
+     * @throws EncryptionConfigurationException
      */
     public function getResourceOwner(AccessToken $token)
     {
         $response = $this->fetchResourceOwnerDetails($token);
+
+        // We are always getting an array. We have to check if it is
+        // the array we created
+        if (array_key_exists('jwt', $response)) {
+            $response = $response['jwt'];
+        }
 
         $response = $this->decryptResponse($response);
 
@@ -287,5 +295,31 @@ class Keycloak extends AbstractProvider
     public function usesEncryption()
     {
         return (bool) $this->encryptionAlgorithm && $this->encryptionKey;
+    }
+
+    /**
+     * Parses the response according to its content-type header.
+     *
+     * @throws UnexpectedValueException
+     * @param  ResponseInterface $response
+     * @return array
+     */
+    protected function parseResponse(ResponseInterface $response)
+    {
+        // We have a problem with keycloak when the userinfo responses
+        // with a jwt token
+        // Because it just return a jwt as string with the header
+        // application/jwt
+        // This can't be parsed to a array
+        // Dont know why this function only allow an array as return value...
+        $content = (string) $response->getBody();
+        $type = $this->getContentType($response);
+
+        if (strpos($type, 'jwt') !== false) {
+            // Here we make the temporary array
+            return ['jwt' => $content];
+        }
+
+        return parent::parseResponse($response);
     }
 }
