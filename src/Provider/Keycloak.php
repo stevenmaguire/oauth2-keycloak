@@ -2,7 +2,6 @@
 
 namespace Stevenmaguire\OAuth2\Client\Provider;
 
-use Exception;
 use Firebase\JWT\JWT;
 use League\OAuth2\Client\Provider\AbstractProvider;
 use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
@@ -10,6 +9,7 @@ use League\OAuth2\Client\Token\AccessToken;
 use League\OAuth2\Client\Tool\BearerAuthorizationTrait;
 use Psr\Http\Message\ResponseInterface;
 use Stevenmaguire\OAuth2\Client\Provider\Exception\EncryptionConfigurationException;
+use Stevenmaguire\OAuth2\Client\Provider\Exception\EncryptionKeyPathNotFoundException;
 use UnexpectedValueException;
 
 class Keycloak extends AbstractProvider
@@ -58,6 +58,7 @@ class Keycloak extends AbstractProvider
      *     override this provider's default behavior. Collaborators include
      *     `grantFactory`, `requestFactory`, `httpClient`, and `randomFactory`.
      *     Individual providers may introduce more collaborators, as needed.
+     * @throws EncryptionKeyPathNotFoundException
      */
     public function __construct(array $options = [], array $collaborators = [])
     {
@@ -74,6 +75,7 @@ class Keycloak extends AbstractProvider
      * @param  string|array|null $response
      *
      * @return string|array|null
+     * @throws EncryptionConfigurationException
      */
     public function decryptResponse($response)
     {
@@ -200,7 +202,7 @@ class Keycloak extends AbstractProvider
      */
     protected function checkResponse(ResponseInterface $response, $data)
     {
-        if (!empty($data['error'])) {
+        if (is_array($data) && !empty($data['error'])) {
             $error = $data['error'].': '.$data['error_description'];
             throw new IdentityProviderException($error, 0, $data);
         }
@@ -272,16 +274,18 @@ class Keycloak extends AbstractProvider
      * Updates expected encryption key of Keycloak instance to content of given
      * file path.
      *
-     * @param string  $encryptionKeyPath
+     * @param string $encryptionKeyPath
      *
      * @return Keycloak
+     * @throws EncryptionKeyPathNotFoundException
      */
     public function setEncryptionKeyPath($encryptionKeyPath)
     {
         try {
             $this->encryptionKey = file_get_contents($encryptionKeyPath);
-        } catch (Exception $e) {
-            // Not sure how to handle this yet.
+        } catch (\Throwable $e) {
+            $message = 'Could not find the encryption key path: "'. $encryptionKeyPath . '"';
+            throw new EncryptionKeyPathNotFoundException($message, 0, $e);
         }
 
         return $this;

@@ -10,8 +10,8 @@ namespace Stevenmaguire\OAuth2\Client\Provider
     function file_get_contents()
     {
         global $mockFileGetContents;
-        if (isset($mockFileGetContents) && ! is_null($mockFileGetContents)) {
-            if (is_a($mockFileGetContents, 'Exception')) {
+        if (isset($mockFileGetContents) && !is_null($mockFileGetContents)) {
+            if ($mockFileGetContents instanceof \Throwable) {
                 throw $mockFileGetContents;
             }
             return $mockFileGetContents;
@@ -25,14 +25,15 @@ namespace Stevenmaguire\OAuth2\Client\Test\Provider
 {
     use League\OAuth2\Client\Tool\QueryBuilderTrait;
     use Mockery as m;
+    use PHPUnit\Framework\TestCase;
 
-    class KeycloakTest extends \PHPUnit_Framework_TestCase
+    class KeycloakTest extends TestCase
     {
         use QueryBuilderTrait;
 
         protected $provider;
 
-        protected function setUp()
+        protected function setUp(): void
         {
             $this->provider = new \Stevenmaguire\OAuth2\Client\Provider\Keycloak([
                 'authServerUrl' => 'http://mock.url/auth',
@@ -43,7 +44,7 @@ namespace Stevenmaguire\OAuth2\Client\Test\Provider
             ]);
         }
 
-        public function tearDown()
+        public function tearDown(): void
         {
             m::close();
             parent::tearDown();
@@ -116,11 +117,13 @@ namespace Stevenmaguire\OAuth2\Client\Test\Provider
             $this->assertEquals($key, $provider->encryptionKey);
         }
 
+        /**
+         * @expectedException Stevenmaguire\OAuth2\Client\Provider\Exception\EncryptionKeyPathNotFoundException
+         */
         public function testEncryptionKeyPathFails()
         {
             global $mockFileGetContents;
             $path = uniqid();
-            $key = uniqid();
             $mockFileGetContents = new \Exception();
 
             $provider = new \Stevenmaguire\OAuth2\Client\Provider\Keycloak([
@@ -186,7 +189,7 @@ namespace Stevenmaguire\OAuth2\Client\Test\Provider
 
         public function testUserData()
         {
-            $userId = rand(1000,9999);
+            $userId = rand(1000, 9999);
             $name = uniqid();
             $nickname = uniqid();
             $email = uniqid();
@@ -196,7 +199,7 @@ namespace Stevenmaguire\OAuth2\Client\Test\Provider
             $postResponse->shouldReceive('getHeader')->andReturn(['content-type' => 'application/x-www-form-urlencoded']);
 
             $userResponse = m::mock('Psr\Http\Message\ResponseInterface');
-            $userResponse->shouldReceive('getBody')->andReturn('{"sub": '.$userId.', "name": "'.$name.'", "email": "'.$email.'"}');
+            $userResponse->shouldReceive('getBody')->andReturn('{"sub": ' . $userId . ', "name": "' . $name . '", "email": "' . $email . '"}');
             $userResponse->shouldReceive('getHeader')->andReturn(['content-type' => 'json']);
 
             $client = m::mock('GuzzleHttp\ClientInterface');
@@ -218,7 +221,7 @@ namespace Stevenmaguire\OAuth2\Client\Test\Provider
 
         public function testUserDataWithEncryption()
         {
-            $userId = rand(1000,9999);
+            $userId = rand(1000, 9999);
             $name = uniqid();
             $nickname = uniqid();
             $email = uniqid();
