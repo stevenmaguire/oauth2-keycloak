@@ -166,6 +166,7 @@ Please see [CONTRIBUTING](https://github.com/stevenmaguire/oauth2-keycloak/blob/
 ## Credits
 
 - [Steven Maguire](https://github.com/stevenmaguire)
+- [Martin Stefan](https://github.com/mstefan21)
 - [All Contributors](https://github.com/stevenmaguire/oauth2-keycloak/contributors)
 
 
