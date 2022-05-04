@@ -30,7 +30,7 @@ class KeycloakResourceOwner implements ResourceOwnerInterface
      */
     public function getId()
     {
-        return $this->response['sub'] ?: null;
+        return $this->response['sub'] ?? null;
     }
 
     /**
@@ -40,7 +40,7 @@ class KeycloakResourceOwner implements ResourceOwnerInterface
      */
     public function getEmail()
     {
-        return $this->response['email'] ?: null;
+        return $this->response['email'] ?? null;
     }
 
     /**
@@ -50,7 +50,7 @@ class KeycloakResourceOwner implements ResourceOwnerInterface
      */
     public function getName()
     {
-        return $this->response['name'] ?: null;
+        return $this->response['name'] ?? null;
     }
 
     /**
