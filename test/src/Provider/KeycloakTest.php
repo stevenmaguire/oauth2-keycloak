@@ -23,11 +23,11 @@ namespace Stevenmaguire\OAuth2\Client\Provider
 
 namespace Stevenmaguire\OAuth2\Client\Test\Provider
 {
-
     use DateInterval;
     use DateTimeImmutable;
     use Firebase\JWT\JWT;
     use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
+    use League\OAuth2\Client\Token\AccessToken;
     use League\OAuth2\Client\Tool\QueryBuilderTrait;
     use Mockery as m;
     use PHPUnit\Framework\TestCase;
@@ -217,6 +217,23 @@ EOF;
             $uri = parse_url($url);
 
             $this->assertEquals('/auth/realms/mock_realm/protocol/openid-connect/logout', $uri['path']);
+        }
+
+        public function testGetLogoutUrlWithIdTokenHint()
+        {
+            $options = [
+                'access_token' => new AccessToken(
+                    [
+                        'id_token' => 'the_id_token',
+                        'access_token' => 'the_access_token',
+                    ]
+                ),
+            ];
+            $url = $this->provider->getLogoutUrl($options);
+            $uri = parse_url($url);
+
+            $this->assertEquals('/auth/realms/mock_realm/protocol/openid-connect/logout', $uri['path']);
+            $this->assertContains('id_token_hint=the_id_token', $uri['query']);
         }
 
         public function testGetBaseAccessTokenUrl()
