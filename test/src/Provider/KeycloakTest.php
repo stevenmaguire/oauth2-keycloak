@@ -132,7 +132,7 @@ namespace Stevenmaguire\OAuth2\Client\Test\Provider
 
         public function testScopes()
         {
-            $scopeSeparator = ',';
+            $scopeSeparator = ' ';
             $options = ['scope' => [uniqid(), uniqid()]];
             $query = ['scope' => implode($scopeSeparator, $options['scope'])];
             $url = $this->provider->getAuthorizationUrl($options);
