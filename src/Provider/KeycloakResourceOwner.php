@@ -30,7 +30,7 @@ class KeycloakResourceOwner implements ResourceOwnerInterface
      */
     public function getId()
     {
-        return $this->response['sub'] ?: null;
+        return \array_key_exists('sub', $this->response) ? $this->response['sub'] : null;
     }
 
     /**
@@ -40,7 +40,7 @@ class KeycloakResourceOwner implements ResourceOwnerInterface
      */
     public function getEmail()
     {
-        return $this->response['email'] ?: null;
+        return \array_key_exists('email', $this->response) ? $this->response['email'] : null;
     }
 
     /**
@@ -50,7 +50,7 @@ class KeycloakResourceOwner implements ResourceOwnerInterface
      */
     public function getName()
     {
-        return $this->response['name'] ?: null;
+        return \array_key_exists('name', $this->response) ? $this->response['name'] : null;
     }
 
     /**
