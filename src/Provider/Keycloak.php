@@ -241,7 +241,7 @@ class Keycloak extends AbstractProvider
         if (!empty($data['error'])) {
             $error = $data['error'];
             if (isset($data['error_description'])) {
-                $error.=': '.$data['error_description'];
+                $error .= ': '.$data['error_description'];
             }
             throw new IdentityProviderException($error, 0, $data);
         }
