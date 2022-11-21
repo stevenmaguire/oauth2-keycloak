@@ -175,7 +175,7 @@ class Keycloak extends AbstractProvider
      */
     protected function getDefaultScopes()
     {
-        return ['profile', 'email'];
+        return ['profile', 'email', 'openid'];
     }
 
     /**
