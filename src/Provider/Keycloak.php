@@ -49,6 +49,13 @@ class Keycloak extends AbstractProvider
     public $encryptionKey = null;
 
     /**
+      * Keycloak version.
+      *
+      * @var string
+      */
+    public $version = null;
+
+    /**
      * Constructs an OAuth 2.0 service provider.
      *
      * @param array $options An array of options to set on this provider.
@@ -65,6 +72,11 @@ class Keycloak extends AbstractProvider
             $this->setEncryptionKeyPath($options['encryptionKeyPath']);
             unset($options['encryptionKeyPath']);
         }
+
+        if (isset($options['version'])) {
+            $this->setVersion($options['version']);
+        }
+
         parent::__construct($options, $collaborators);
     }
 
@@ -141,6 +153,21 @@ class Keycloak extends AbstractProvider
     {
         $base = $this->getBaseLogoutUrl();
         $params = $this->getAuthorizationParameters($options);
+
+        // Starting with keycloak 18.0.0, the parameter redirect_uri is no longer supported on logout.
+        // As of this version the parameter is called post_logout_redirect_uri. In addition to this
+        // a parameter id_token_hint has to be provided.
+        if ($this->validateGteVersion('18.0.0')) {
+            if (isset($options['access_token']) === true) {
+                $accessToken = $options['access_token'];
+
+                $params['id_token_hint'] = $accessToken->getValues()['id_token'];
+                $params['post_logout_redirect_uri'] = $params['redirect_uri'];
+            }
+
+            unset($params['redirect_uri']);
+        }
+
         $query = $this->getAuthorizationQuery($params);
         return $this->appendQuery($base, $query);
     }
@@ -175,7 +202,14 @@ class Keycloak extends AbstractProvider
      */
     protected function getDefaultScopes()
     {
-        return ['profile', 'email'];
+        $scopes = [
+            'profile',
+            'email'
+        ];
+        if ($this->validateGteVersion('20.0.0')) {
+            $scopes[] = 'openid';
+        }
+        return $scopes;
     }
 
     /**
@@ -202,7 +236,7 @@ class Keycloak extends AbstractProvider
     {
         if (!empty($data['error'])) {
             $error = $data['error'];
-            if(isset($data['error_description'])){
+            if (isset($data['error_description'])) {
                 $error.=': '.$data['error_description'];
             }
             throw new IdentityProviderException($error, 0, $data);
@@ -290,6 +324,20 @@ class Keycloak extends AbstractProvider
         return $this;
     }
 
+     /**
+      * Updates the keycloak version.
+      *
+      * @param string  $version
+      *
+      * @return Keycloak
+      */
+    public function setVersion($version)
+    {
+        $this->version = $version;
+
+        return $this;
+    }
+
     /**
      * Checks if provider is configured to use encryption.
      *
@@ -324,5 +372,16 @@ class Keycloak extends AbstractProvider
         }
 
         return parent::parseResponse($response);
+    }
+
+    /**
+     * Validate if version is greater or equal
+     *
+     * @param string $version
+     * @return bool
+     */
+    private function validateGteVersion($version)
+    {
+        return (isset($this->version) && version_compare($this->version, $version, '>='));
     }
 }
