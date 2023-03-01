@@ -41,5 +41,11 @@
         "branch-alias": {
             "dev-master": "1.0.x-dev"
         }
+    },
+    "scripts": {
+        "test": [
+            "@putenv XDEBUG_MODE=coverage",
+            "phpunit --colors=always"
+        ]
     }
 }
