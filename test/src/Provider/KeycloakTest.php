@@ -23,16 +23,20 @@ namespace Stevenmaguire\OAuth2\Client\Provider
 
 namespace Stevenmaguire\OAuth2\Client\Test\Provider
 {
+
+    use Firebase\JWT\Key;
+    use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
     use League\OAuth2\Client\Tool\QueryBuilderTrait;
     use Mockery as m;
+    use Stevenmaguire\OAuth2\Client\Provider\Exception\EncryptionConfigurationException;
 
-    class KeycloakTest extends \PHPUnit_Framework_TestCase
+    class KeycloakTest extends \PHPUnit\Framework\TestCase
     {
         use QueryBuilderTrait;
 
         protected $provider;
 
-        protected function setUp()
+        protected function setUp(): void
         {
             $this->provider = new \Stevenmaguire\OAuth2\Client\Provider\Keycloak([
                 'authServerUrl' => 'http://mock.url/auth',
@@ -43,7 +47,7 @@ namespace Stevenmaguire\OAuth2\Client\Test\Provider
             ]);
         }
 
-        public function tearDown()
+        public function tearDown(): void
         {
             m::close();
             parent::tearDown();
@@ -137,7 +141,7 @@ namespace Stevenmaguire\OAuth2\Client\Test\Provider
             $query = ['scope' => implode($scopeSeparator, $options['scope'])];
             $url = $this->provider->getAuthorizationUrl($options);
             $encodedScope = $this->buildQueryString($query);
-            $this->assertContains($encodedScope, $url);
+            $this->assertStringContainsString($encodedScope, $url);
         }
 
         public function testGetAuthorizationUrl()
@@ -237,7 +241,7 @@ namespace Stevenmaguire\OAuth2\Client\Test\Provider
             $userResponse->shouldReceive('getStatusCode')->andReturn(200);
 
             $decoder = \Mockery::mock('overload:Firebase\JWT\JWT');
-            $decoder->shouldReceive('decode')->with($jwt, $key, [$algorithm])->andReturn([
+            $decoder->shouldReceive('decode')->with($jwt, m::type(Key::class))->andReturn([
                 'sub' => $userId,
                 'email' => $email,
                 'name' => $name,
@@ -262,11 +266,9 @@ namespace Stevenmaguire\OAuth2\Client\Test\Provider
             $this->assertEquals($email, $user->toArray()['email']);
         }
 
-        /**
-         * @expectedException Stevenmaguire\OAuth2\Client\Provider\Exception\EncryptionConfigurationException
-         */
         public function testUserDataFailsWhenEncryptionEncounteredAndNotConfigured()
         {
+            $this->expectException(EncryptionConfigurationException::class);
             $postResponse = m::mock('Psr\Http\Message\ResponseInterface');
             $postResponse->shouldReceive('getBody')->andReturn('access_token=mock_access_token&expires=3600&refresh_token=mock_refresh_token&otherKey={1234}');
             $postResponse->shouldReceive('getHeader')->andReturn(['content-type' => 'application/x-www-form-urlencoded']);
@@ -287,11 +289,9 @@ namespace Stevenmaguire\OAuth2\Client\Test\Provider
             $user = $this->provider->getResourceOwner($token);
         }
 
-        /**
-         * @expectedException League\OAuth2\Client\Provider\Exception\IdentityProviderException
-         */
         public function testErrorResponse()
         {
+            $this->expectException(IdentityProviderException::class);
             $response = m::mock('Psr\Http\Message\ResponseInterface');
             $response->shouldReceive('getBody')->andReturn('{"error": "invalid_grant", "error_description": "Code not found"}');
             $response->shouldReceive('getHeader')->andReturn(['content-type' => 'json']);
