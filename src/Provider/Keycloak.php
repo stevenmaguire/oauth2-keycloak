@@ -4,6 +4,8 @@ namespace Stevenmaguire\OAuth2\Client\Provider;
 
 use Exception;
 use Firebase\JWT\JWT;
+use GuzzleHttp\Client;
+use GuzzleHttp\RequestOptions;
 use League\OAuth2\Client\Provider\AbstractProvider;
 use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
 use League\OAuth2\Client\Token\AccessToken;
@@ -144,6 +146,18 @@ class Keycloak extends AbstractProvider
     }
 
     /**
+     * Get provider url to fetch introspect token
+     *
+     * @param  AccessToken $token
+     *
+     * @return string
+     */
+    public function getIntrospectTokenUrl(AccessToken $token)
+    {
+        return $this->getBaseUrlWithRealm() . '/protocol/openid-connect/token/introspect';
+    }
+
+    /**
      * Builds the logout URL.
      *
      * @param array $options
@@ -180,6 +194,23 @@ class Keycloak extends AbstractProvider
     private function getBaseLogoutUrl()
     {
         return $this->getBaseUrlWithRealm() . '/protocol/openid-connect/logout';
+    }
+
+    private function fetchIntrospectToken(AccessToken $token) {
+        $data = array(
+            'form_params' => array(
+                "token" => $token->getToken(),
+                "client_id" => $this->clientId,
+                "client_secret" => $this->clientSecret ),
+            RequestOptions::SYNCHRONOUS => true
+        );
+
+        $url = $this->getIntrospectTokenUrl($token);
+
+        $client = new Client();
+        $response = $client->requestAsync(self::METHOD_POST, $url, $data)->wait();
+        $parsed = $this->parseResponse($response);
+        return $parsed;
     }
 
     /**
@@ -273,6 +304,21 @@ class Keycloak extends AbstractProvider
         }
 
         $response = $this->decryptResponse($response);
+
+        return $this->createResourceOwner($response, $token);
+    }
+
+    /**
+     * Requests and returns the resource owner of given access token introspection.
+     *
+     * @param  AccessToken $token
+     * @return KeycloakResourceOwner
+     */
+    public function getResourceOwnerFromIntrospectedToken(AccessToken $token)
+    {
+        $parsed = $this->fetchIntrospectToken($token);
+
+        $response = $this->decryptResponse($parsed);
 
         return $this->createResourceOwner($response, $token);
     }
