@@ -4,6 +4,7 @@ namespace Stevenmaguire\OAuth2\Client\Provider;
 
 use Exception;
 use Firebase\JWT\JWT;
+use Firebase\JWT\Key;
 use League\OAuth2\Client\Provider\AbstractProvider;
 use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
 use League\OAuth2\Client\Token\AccessToken;
@@ -83,9 +84,10 @@ class Keycloak extends AbstractProvider
     /**
      * Attempts to decrypt the given response.
      *
-     * @param  string|array|null $response
+     * @param string|array|null $response
      *
      * @return string|array|null
+     * @throws EncryptionConfigurationException
      */
     public function decryptResponse($response)
     {
@@ -98,8 +100,10 @@ class Keycloak extends AbstractProvider
                 json_encode(
                     JWT::decode(
                         $response,
-                        $this->encryptionKey,
-                        array($this->encryptionAlgorithm)
+                        new Key(
+                            $this->encryptionKey,
+                            $this->encryptionAlgorithm
+                        )
                     )
                 ),
                 true

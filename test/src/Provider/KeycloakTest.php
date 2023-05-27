@@ -23,6 +23,11 @@ namespace Stevenmaguire\OAuth2\Client\Provider
 
 namespace Stevenmaguire\OAuth2\Client\Test\Provider
 {
+
+    use DateInterval;
+    use DateTime;
+    use Firebase\JWT\JWT;
+    use Firebase\JWT\Key;
     use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
     use League\OAuth2\Client\Tool\QueryBuilderTrait;
     use Mockery as m;
@@ -33,6 +38,58 @@ namespace Stevenmaguire\OAuth2\Client\Test\Provider
     class KeycloakTest extends TestCase
     {
         use QueryBuilderTrait;
+
+        public const ENCRYPTION_KEY = <<<EOD
+-----BEGIN PUBLIC KEY-----
+MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC8kGa1pSjbSYZVebtTRBLxBz5H
+4i2p/llLCrEeQhta5kaQu/RnvuER4W8oDH3+3iuIYW4VQAzyqFpwuzjkDI+17t5t
+0tyazyZ8JXw+KgXTxldMPEL95+qVhgXvwtihXC1c5oGbRlEDvDF6Sa53rcFVsYJ4
+ehde/zUxo6UvS7UrBQIDAQAB
+-----END PUBLIC KEY-----
+EOD;
+
+        public const ENCRYPTION_ALGORITHM = 'HS256';
+
+        private $jwtTemplate = <<<EOF
+{
+  "exp": "%s",
+  "iat": "%s",
+  "jti": "e11a85c8-aa91-4f75-9088-57db4586f8b9",
+  "iss": "https://example.org/auth/realms/test-realm",
+  "aud": "account",
+  "nbf": "%s",
+  "sub": "4332085e-b944-4acc-9eb1-27d8f5405f3e",
+  "typ": "Bearer",
+  "azp": "test-app",
+  "session_state": "c90c8e0d-aabb-4c71-b8a8-e88792cacd96",
+  "acr": "1",
+  "realm_access": {
+    "roles": [
+      "default-roles-test-realm",
+      "offline_access",
+      "uma_authorization"
+    ]
+  },
+  "resource_access": {
+    "account": {
+      "roles": [
+        "manage-account",
+        "manage-account-links",
+        "view-profile"
+      ]
+    }
+  },
+  "scope": "openid email profile",
+  "sid": "c90c8e0d-aabb-4c71-b8a8-e88792cacd96",
+  "address": {},
+  "email_verified": true,
+  "name": "Test User",
+  "preferred_username": "test-user",
+  "given_name": "Test",
+  "family_name": "User",
+  "email": "test-user@example.org"
+}
+EOF;
 
         protected $provider;
 
@@ -262,7 +319,7 @@ namespace Stevenmaguire\OAuth2\Client\Test\Provider
 
             $decoder = \Mockery::mock('overload:Firebase\JWT\JWT');
             $decoder->shouldReceive('decode')
-                ->with($jwt, $key, [$algorithm])
+                ->with($jwt, new Key($key, $algorithm))
                 ->andReturn([
                     'sub' => $userId,
                     'email' => $email,
@@ -337,6 +394,39 @@ namespace Stevenmaguire\OAuth2\Client\Test\Provider
             $this->provider->setHttpClient($client);
 
             $token = $this->provider->getAccessToken('authorization_code', ['code' => 'mock_authorization_code']);
+        }
+
+        public function testCanDecryptResponseThrowsExceptionIfResponseIsNotAStringAndEncryptionIsNotUsed()
+        {
+            $this->expectException(EncryptionConfigurationException::class);
+
+            $this->provider->decryptResponse('');
+
+            $this->assertFalse($this->provider->usesEncryption());
+        }
+
+        public function testCanDecryptResponseReturnsResponseWhenEncryptionIsUsed()
+        {
+
+         $jwt = JWT::encode(
+            json_decode(
+                sprintf(
+                    $this->jwtTemplate,
+                    (new DateTime())->add(new DateInterval('PT1H'))->getTimestamp(),
+                    (new DateTime())->sub(new DateInterval('P1D'))->getTimestamp(),
+                    (new DateTime())->sub(new DateInterval('P1D'))->getTimestamp()
+                ),
+                true
+            ),
+            self::ENCRYPTION_KEY,
+            self::ENCRYPTION_ALGORITHM
+        );
+
+            $this->provider
+                ->setEncryptionAlgorithm(self::ENCRYPTION_ALGORITHM)
+                ->setEncryptionKey(self::ENCRYPTION_KEY);
+
+            $response = $this->provider->decryptResponse($jwt);
         }
     }
 }
