@@ -393,7 +393,7 @@ EOF;
 
             $email = "test-user@example.org";
             $name = "Test User";
-            $userId = "c90c8e0d-aabb-4c71-b8a8-e88792cacd96";
+            $userId = "4332085e-b944-4acc-9eb1-27d8f5405f3e";
 
             $this->assertEquals($userId, $user->getId());
             $this->assertEquals($userId, $user->toArray()['sub']);
