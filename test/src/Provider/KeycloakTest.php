@@ -32,6 +32,7 @@ namespace Stevenmaguire\OAuth2\Client\Test\Provider
     use League\OAuth2\Client\Tool\QueryBuilderTrait;
     use Mockery as m;
     use PHPUnit\Framework\TestCase;
+    use Psr\Http\Message\StreamInterface;
     use Stevenmaguire\OAuth2\Client\Provider\Exception\EncryptionConfigurationException;
     use Stevenmaguire\OAuth2\Client\Provider\Keycloak;
 
@@ -231,10 +232,17 @@ EOF;
 
         public function testGetAccessToken()
         {
+            $stream = $this->createMock(StreamInterface::class);
+            $stream
+                ->method('__toString')
+                ->willReturn('{"access_token":"mock_access_token","scope":"email","token_type":"bearer"}');
+
             $response = m::mock('Psr\Http\Message\ResponseInterface');
-            $response->shouldReceive('getBody')
-                ->andReturn('{"access_token":"mock_access_token", "scope":"email", "token_type":"bearer"}');
-            $response->shouldReceive('getHeader')
+            $response
+                ->shouldReceive('getBody')
+                ->andReturn($stream);
+            $response
+                ->shouldReceive('getHeader')
                 ->andReturn(['content-type' => 'json']);
 
             $client = m::mock('GuzzleHttp\ClientInterface');
@@ -243,7 +251,9 @@ EOF;
                 ->andReturn($response);
             $this->provider->setHttpClient($client);
 
-            $token = $this->provider->getAccessToken('authorization_code', ['code' => 'mock_authorization_code']);
+            $token = $this
+                ->provider
+                ->getAccessToken('authorization_code', ['code' => 'mock_authorization_code']);
 
             $this->assertEquals('mock_access_token', $token->getToken());
             $this->assertNull($token->getExpires());
@@ -255,30 +265,56 @@ EOF;
         {
             $userId = rand(1000, 9999);
             $name = uniqid();
-            $nickname = uniqid();
             $email = uniqid();
 
-            $postResponse = m::mock('Psr\Http\Message\ResponseInterface');
-            $postResponse->shouldReceive('getBody')
-                ->andReturn(
-                    'access_token=mock_access_token&expires=3600&refresh_token=mock_refresh_token&otherKey={1234}'
+            $getAccessTokenResponseStream = $this->createMock(StreamInterface::class);
+            $getAccessTokenResponseStream
+                ->method('__toString')
+                ->willReturn(
+                    '{"access_token":"mock_access_token","expires":"3600","refresh_token":"mock_refresh_token","otherKey":[1234]}'
                 );
-            $postResponse->shouldReceive('getHeader')
-                ->andReturn(['content-type' => 'application/x-www-form-urlencoded']);
+
+            $postResponse = m::mock('Psr\Http\Message\ResponseInterface');
+            $postResponse
+                ->shouldReceive('getBody')
+                ->andReturn($getAccessTokenResponseStream);
+            $postResponse
+                ->shouldReceive('getHeader')
+                ->andReturn(['content-type' => 'json']);
+
+            $getResourceOwnerResponseStream = $this->createMock(StreamInterface::class);
+            $getResourceOwnerResponseStream
+                ->method('__toString')
+                ->willReturn(
+                    sprintf(
+                        '{"sub": "%s", "name": "%s", "email": "%s"}',
+                        $userId,
+                        $name,
+                        $email
+                    )
+                );
 
             $userResponse = m::mock('Psr\Http\Message\ResponseInterface');
-            $userResponse->shouldReceive('getBody')
-                ->andReturn('{"sub": '.$userId.', "name": "'.$name.'", "email": "'.$email.'"}');
-            $userResponse->shouldReceive('getHeader')
+            $userResponse
+                ->shouldReceive('getBody')
+                ->andReturn($getResourceOwnerResponseStream);
+            $userResponse
+                ->shouldReceive('getHeader')
                 ->andReturn(['content-type' => 'json']);
 
             $client = m::mock('GuzzleHttp\ClientInterface');
-            $client->shouldReceive('send')
-                ->times(2)
+            $client
+                ->shouldReceive('send')
                 ->andReturn($postResponse, $userResponse);
             $this->provider->setHttpClient($client);
 
-            $token = $this->provider->getAccessToken('authorization_code', ['code' => 'mock_authorization_code']);
+            $token = $this->provider->getAccessToken(
+                'authorization_code',
+                [
+                    'code' => 'mock_authorization_code',
+                    'access_token' => 'mock_access_token',
+                ]
+            );
             $user = $this->provider->getResourceOwner($token);
 
             $this->assertEquals($userId, $user->getId());
@@ -291,51 +327,74 @@ EOF;
 
         public function testUserDataWithEncryption()
         {
-            $userId = rand(1000, 9999);
-            $name = uniqid();
-            $nickname = uniqid();
-            $email = uniqid();
-            $jwt = uniqid();
-            $algorithm = uniqid();
-            $key = uniqid();
+            $jwt = JWT::encode(
+                json_decode(
+                    sprintf(
+                        $this->jwtTemplate,
+                        (new DateTime())->add(new DateInterval('PT1H'))->getTimestamp(),
+                        (new DateTime())->sub(new DateInterval('P1D'))->getTimestamp(),
+                        (new DateTime())->sub(new DateInterval('P1D'))->getTimestamp()
+                    ),
+                    true
+                ),
+                self::ENCRYPTION_KEY,
+                self::ENCRYPTION_ALGORITHM
+            );
 
-            $postResponse = m::mock('Psr\Http\Message\ResponseInterface');
-            $postResponse->shouldReceive('getBody')
-                ->andReturn(
-                    'access_token=mock_access_token&expires=3600&refresh_token=mock_refresh_token&otherKey={1234}'
+            $getAccessTokenResponseStream = $this->createMock(StreamInterface::class);
+            $getAccessTokenResponseStream
+                ->method('__toString')
+                ->willReturn(
+                    sprintf(
+                        '{"access_token":"%s","expires":"3600","refresh_token":"mock_refresh_token","otherKey":[1234]}',
+                        $jwt
+                    )
                 );
-            $postResponse->shouldReceive('getHeader')
-                ->andReturn(['content-type' => 'application/x-www-form-urlencoded']);
-            $postResponse->shouldReceive('getStatusCode')
+
+            $accessTokenResponse = m::mock('Psr\Http\Message\ResponseInterface');
+            $accessTokenResponse
+                ->shouldReceive('getBody')
+                ->andReturn($getAccessTokenResponseStream);
+            $accessTokenResponse
+                ->shouldReceive('getHeader')
+                ->andReturn(['content-type' => 'json']);
+            $accessTokenResponse
+                ->shouldReceive('getStatusCode')
                 ->andReturn(200);
 
-            $userResponse = m::mock('Psr\Http\Message\ResponseInterface');
-            $userResponse->shouldReceive('getBody')
-                ->andReturn($jwt);
-            $userResponse->shouldReceive('getHeader')
+            $getResourceOwnerResponseStream = $this->createMock(StreamInterface::class);
+            $getResourceOwnerResponseStream
+                ->method('__toString')
+                ->willReturn($jwt);
+
+            $resourceOwnerResponse = m::mock('Psr\Http\Message\ResponseInterface');
+            $resourceOwnerResponse
+                ->shouldReceive('getBody')
+                ->andReturn($getResourceOwnerResponseStream);
+            $resourceOwnerResponse
+                ->shouldReceive('getHeader')
                 ->andReturn(['content-type' => 'application/jwt']);
-            $userResponse->shouldReceive('getStatusCode')
+            $resourceOwnerResponse
+                ->shouldReceive('getStatusCode')
                 ->andReturn(200);
-
-            $decoder = \Mockery::mock('overload:Firebase\JWT\JWT');
-            $decoder->shouldReceive('decode')
-                ->with($jwt, new Key($key, $algorithm))
-                ->andReturn([
-                    'sub' => $userId,
-                    'email' => $email,
-                    'name' => $name,
-                ]);
 
             $client = m::mock('GuzzleHttp\ClientInterface');
-            $client->shouldReceive('send')
+            $client
+                ->shouldReceive('send')
                 ->times(2)
-                ->andReturn($postResponse, $userResponse);
+                ->andReturn($accessTokenResponse, $resourceOwnerResponse);
             $this->provider->setHttpClient($client);
 
-            $token = $this->provider->setEncryptionAlgorithm($algorithm)
-                ->setEncryptionKey($key)
+            $token = $this
+                ->provider
+                ->setEncryptionAlgorithm(self::ENCRYPTION_ALGORITHM)
+                ->setEncryptionKey(self::ENCRYPTION_KEY)
                 ->getAccessToken('authorization_code', ['code' => 'mock_authorization_code']);
             $user = $this->provider->getResourceOwner($token);
+
+            $email = "test-user@example.org";
+            $name = "Test User";
+            $userId = "c90c8e0d-aabb-4c71-b8a8-e88792cacd96";
 
             $this->assertEquals($userId, $user->getId());
             $this->assertEquals($userId, $user->toArray()['sub']);
@@ -349,31 +408,51 @@ EOF;
         {
             $this->expectException(EncryptionConfigurationException::class);
 
-            $postResponse = m::mock('Psr\Http\Message\ResponseInterface');
-            $postResponse->shouldReceive('getBody')
-                ->andReturn(
-                    'access_token=mock_access_token&expires=3600&refresh_token=mock_refresh_token&otherKey={1234}'
+            $accessTokenResponseStream = $this->createMock(StreamInterface::class);
+            $accessTokenResponseStream
+                ->method('__toString')
+                ->willReturn(
+                    '{"access_token":"mock_access_token","expires":"3600","refresh_token":"mock_refresh_token","otherKey":[1234]}'
                 );
-            $postResponse->shouldReceive('getHeader')
-                ->andReturn(['content-type' => 'application/x-www-form-urlencoded']);
-            $postResponse->shouldReceive('getStatusCode')
+
+            $getAccessTokenResponse = m::mock('Psr\Http\Message\ResponseInterface');
+            $getAccessTokenResponse
+                ->shouldReceive('getBody')
+                ->andReturn($accessTokenResponseStream);
+            $getAccessTokenResponse
+                ->shouldReceive('getHeader')
+                ->andReturn(['content-type' => 'json']);
+            $getAccessTokenResponse
+                ->shouldReceive('getStatusCode')
                 ->andReturn(200);
 
-            $userResponse = m::mock('Psr\Http\Message\ResponseInterface');
-            $userResponse->shouldReceive('getBody')
-                ->andReturn(uniqid());
-            $userResponse->shouldReceive('getHeader')
+            $resourceOwnerResponseStream = $this->createMock(StreamInterface::class);
+            $resourceOwnerResponseStream
+                ->method('__toString')
+                ->willReturn(uniqid());
+
+            $getResourceOwnerResponse = m::mock('Psr\Http\Message\ResponseInterface');
+            $getResourceOwnerResponse
+                ->shouldReceive('getBody')
+                ->andReturn($resourceOwnerResponseStream);
+            $getResourceOwnerResponse
+                ->shouldReceive('getHeader')
                 ->andReturn(['content-type' => 'application/jwt']);
-            $userResponse->shouldReceive('getStatusCode')
+            $getResourceOwnerResponse
+                ->shouldReceive('getStatusCode')
                 ->andReturn(200);
 
             $client = m::mock('GuzzleHttp\ClientInterface');
-            $client->shouldReceive('send')
+            $client
+                ->shouldReceive('send')
                 ->times(2)
-                ->andReturn($postResponse, $userResponse);
+                ->andReturn($getAccessTokenResponse, $getResourceOwnerResponse);
             $this->provider->setHttpClient($client);
 
-            $token = $this->provider->getAccessToken('authorization_code', ['code' => 'mock_authorization_code']);
+            $token = $this->provider->getAccessToken(
+                'authorization_code', #
+                ['code' => 'mock_authorization_code']
+            );
             $user = $this->provider->getResourceOwner($token);
         }
 
@@ -381,14 +460,24 @@ EOF;
         {
             $this->expectException(IdentityProviderException::class);
 
+            $accessTokenResponseStream = $this->createMock(StreamInterface::class);
+            $accessTokenResponseStream
+                ->method('__toString')
+                ->willReturn(
+                    '{"error": "invalid_grant", "error_description": "Code not found"}'
+                );
+
             $response = m::mock('Psr\Http\Message\ResponseInterface');
-            $response->shouldReceive('getBody')
-                ->andReturn('{"error": "invalid_grant", "error_description": "Code not found"}');
-            $response->shouldReceive('getHeader')
+            $response
+                ->shouldReceive('getBody')
+                ->andReturn($accessTokenResponseStream);
+            $response
+                ->shouldReceive('getHeader')
                 ->andReturn(['content-type' => 'json']);
 
             $client = m::mock('GuzzleHttp\ClientInterface');
-            $client->shouldReceive('send')
+            $client
+                ->shouldReceive('send')
                 ->times(1)
                 ->andReturn($response);
             $this->provider->setHttpClient($client);
