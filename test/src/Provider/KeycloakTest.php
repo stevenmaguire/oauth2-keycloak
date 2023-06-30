@@ -26,6 +26,7 @@ namespace Stevenmaguire\OAuth2\Client\Test\Provider
 
     use DateInterval;
     use DateTime;
+    use DateTimeImmutable;
     use Firebase\JWT\JWT;
     use Firebase\JWT\Key;
     use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
