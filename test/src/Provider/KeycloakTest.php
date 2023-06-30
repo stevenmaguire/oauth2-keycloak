@@ -412,9 +412,9 @@ EOF;
             json_decode(
                 sprintf(
                     $this->jwtTemplate,
-                    (new DateTime())->add(new DateInterval('PT1H'))->getTimestamp(),
-                    (new DateTime())->sub(new DateInterval('P1D'))->getTimestamp(),
-                    (new DateTime())->sub(new DateInterval('P1D'))->getTimestamp()
+                    (new DateTimeImmutable())->add(new DateInterval('PT1H'))->getTimestamp(),
+                    (new DateTimeImmutable())->sub(new DateInterval('P1D'))->getTimestamp(),
+                    (new DateTimeImmutable())->sub(new DateInterval('P1D'))->getTimestamp()
                 ),
                 true
             ),
