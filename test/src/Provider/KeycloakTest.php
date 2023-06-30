@@ -498,19 +498,19 @@ EOF;
         public function testCanDecryptResponseReturnsResponseWhenEncryptionIsUsed()
         {
 
-         $jwt = JWT::encode(
-            json_decode(
-                sprintf(
-                    $this->jwtTemplate,
-                    (new DateTimeImmutable())->add(new DateInterval('PT1H'))->getTimestamp(),
-                    (new DateTimeImmutable())->sub(new DateInterval('P1D'))->getTimestamp(),
-                    (new DateTimeImmutable())->sub(new DateInterval('P1D'))->getTimestamp()
+            $jwt = JWT::encode(
+                json_decode(
+                    sprintf(
+                        $this->jwtTemplate,
+                        (new DateTimeImmutable())->add(new DateInterval('PT1H'))->getTimestamp(),
+                        (new DateTimeImmutable())->sub(new DateInterval('P1D'))->getTimestamp(),
+                        (new DateTimeImmutable())->sub(new DateInterval('P1D'))->getTimestamp()
+                    ),
+                    true
                 ),
-                true
-            ),
-            self::ENCRYPTION_KEY,
-            self::ENCRYPTION_ALGORITHM
-        );
+                self::ENCRYPTION_KEY,
+                self::ENCRYPTION_ALGORITHM
+            );
 
             $this->provider
                 ->setEncryptionAlgorithm(self::ENCRYPTION_ALGORITHM)
