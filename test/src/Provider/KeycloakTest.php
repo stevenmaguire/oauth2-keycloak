@@ -25,10 +25,8 @@ namespace Stevenmaguire\OAuth2\Client\Test\Provider
 {
 
     use DateInterval;
-    use DateTime;
     use DateTimeImmutable;
     use Firebase\JWT\JWT;
-    use Firebase\JWT\Key;
     use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
     use League\OAuth2\Client\Tool\QueryBuilderTrait;
     use Mockery as m;
@@ -332,9 +330,9 @@ EOF;
                 json_decode(
                     sprintf(
                         $this->jwtTemplate,
-                        (new DateTime())->add(new DateInterval('PT1H'))->getTimestamp(),
-                        (new DateTime())->sub(new DateInterval('P1D'))->getTimestamp(),
-                        (new DateTime())->sub(new DateInterval('P1D'))->getTimestamp()
+                        (new DateTimeImmutable())->add(new DateInterval('PT1H'))->getTimestamp(),
+                        (new DateTimeImmutable())->sub(new DateInterval('P1D'))->getTimestamp(),
+                        (new DateTimeImmutable())->sub(new DateInterval('P1D'))->getTimestamp()
                     ),
                     true
                 ),
