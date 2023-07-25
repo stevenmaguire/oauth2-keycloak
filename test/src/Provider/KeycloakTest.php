@@ -221,6 +221,8 @@ EOF;
 
         public function testGetLogoutUrlWithIdTokenHint()
         {
+            $this->provider->setVersion('18.0.0');
+
             $options = [
                 'access_token' => new AccessToken(
                     [
