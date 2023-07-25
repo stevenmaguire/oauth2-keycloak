@@ -233,7 +233,7 @@ EOF;
             $uri = parse_url($url);
 
             $this->assertEquals('/auth/realms/mock_realm/protocol/openid-connect/logout', $uri['path']);
-            $this->assertContains('id_token_hint=the_id_token', $uri['query']);
+            $this->assertStringContainsString('id_token_hint=the_id_token', $uri['query']);
         }
 
         public function testGetBaseAccessTokenUrl()
