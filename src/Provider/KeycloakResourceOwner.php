@@ -54,6 +54,36 @@ class KeycloakResourceOwner implements ResourceOwnerInterface
     }
 
     /**
+     * Get resource owner username
+     *
+     * @return string|null
+     */
+    public function getUsername()
+    {
+        return \array_key_exists('preferred_username', $this->response) ? $this->response['preferred_username'] : null;
+    }
+
+    /**
+     * Get resource owner first name
+     *
+     * @return string|null
+     */
+    public function getFirstName()
+    {
+        return \array_key_exists('given_name', $this->response) ? $this->response['given_name'] : null;
+    }
+
+    /**
+     * Get resource owner last name
+     *
+     * @return string|null
+     */
+    public function getLastName()
+    {
+        return \array_key_exists('family_name', $this->response) ? $this->response['family_name'] : null;
+    }
+
+    /**
      * Return all of the owner details available as an array.
      *
      * @return array

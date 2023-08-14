@@ -265,6 +265,9 @@ EOF;
             $userId = rand(1000, 9999);
             $name = uniqid();
             $email = uniqid();
+            $username = uniqid();
+            $firstName = uniqid();
+            $lastName = uniqid();
 
             $getAccessTokenResponseStream = $this->createMock(StreamInterface::class);
             $getAccessTokenResponseStream
@@ -286,10 +289,13 @@ EOF;
                 ->method('__toString')
                 ->willReturn(
                     sprintf(
-                        '{"sub": "%s", "name": "%s", "email": "%s"}',
+                        '{"sub": "%s", "name": "%s", "email": "%s", "preferred_username": "%s", "given_name": "%s", "family_name": "%s"}',
                         $userId,
                         $name,
-                        $email
+                        $email,
+                        $username,
+                        $firstName,
+                        $lastName
                     )
                 );
 
@@ -322,6 +328,12 @@ EOF;
             $this->assertEquals($name, $user->toArray()['name']);
             $this->assertEquals($email, $user->getEmail());
             $this->assertEquals($email, $user->toArray()['email']);
+            $this->assertEquals($username, $user->getUsername());
+            $this->assertEquals($username, $user->toArray()['preferred_username']);
+            $this->assertEquals($firstName, $user->getFirstName());
+            $this->assertEquals($firstName, $user->toArray()['given_name']);
+            $this->assertEquals($lastName, $user->getLastName());
+            $this->assertEquals($lastName, $user->toArray()['family_name']);
         }
 
         public function testUserDataWithEncryption()
@@ -394,6 +406,9 @@ EOF;
             $email = "test-user@example.org";
             $name = "Test User";
             $userId = "4332085e-b944-4acc-9eb1-27d8f5405f3e";
+            $username = "test-user";
+            $firstName = "Test";
+            $lastName = "User";
 
             $this->assertEquals($userId, $user->getId());
             $this->assertEquals($userId, $user->toArray()['sub']);
@@ -401,6 +416,12 @@ EOF;
             $this->assertEquals($name, $user->toArray()['name']);
             $this->assertEquals($email, $user->getEmail());
             $this->assertEquals($email, $user->toArray()['email']);
+            $this->assertEquals($username, $user->getUsername());
+            $this->assertEquals($username, $user->toArray()['preferred_username']);
+            $this->assertEquals($firstName, $user->getFirstName());
+            $this->assertEquals($firstName, $user->toArray()['given_name']);
+            $this->assertEquals($lastName, $user->getLastName());
+            $this->assertEquals($lastName, $user->toArray()['family_name']);
         }
 
         public function testUserDataFailsWhenEncryptionEncounteredAndNotConfigured()
