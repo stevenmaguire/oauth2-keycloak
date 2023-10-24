@@ -50,7 +50,7 @@ class KeycloakResourceOwner implements ResourceOwnerInterface
      */
     public function getName()
     {
-        return \array_key_exists('name', $this->response) ? $this->response['name'] : null;
+        return \array_key_exists('preferred_username', $this->response) ? $this->response['preferred_username'] : null;
     }
 
     /**
