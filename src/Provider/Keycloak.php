@@ -164,11 +164,10 @@ class Keycloak extends AbstractProvider
         if ($this->validateGteVersion('18.0.0')) {
             if (isset($options['access_token']) === true) {
                 $accessToken = $options['access_token'];
-
                 $params['id_token_hint'] = $accessToken->getValues()['id_token'];
-                $params['post_logout_redirect_uri'] = $params['redirect_uri'];
             }
 
+            $params['post_logout_redirect_uri'] = $params['redirect_uri'];
             unset($params['redirect_uri']);
         }
 
