@@ -34,8 +34,8 @@ $provider = new Stevenmaguire\OAuth2\Client\Provider\Keycloak([
     'clientSecret'          => '{keycloak-client-secret}',
     'redirectUri'           => 'https://example.com/callback-url',
     'encryptionAlgorithm'   => 'RS256',                             // optional
-    'encryptionKeyPath'     => '../key.pem'                         // optional
-    'encryptionKey'         => 'contents_of_key_or_certificate'     // optional
+    'encryptionKeyPath'     => '../key.pem',                        // optional
+    'encryptionKey'         => 'contents_of_key_or_certificate',    // optional
     'version'               => '20.0.1',                            // optional
 ]);
 
