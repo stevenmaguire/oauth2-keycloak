@@ -36,7 +36,7 @@ $provider = new Stevenmaguire\OAuth2\Client\Provider\Keycloak([
     'encryptionAlgorithm'   => 'RS256',                             // optional
     'encryptionKeyPath'     => '../key.pem'                         // optional
     'encryptionKey'         => 'contents_of_key_or_certificate'     // optional
-    'version'               => '20.0.1',                            // optional
+    'version'               => '20.0.1',                            // optional but openid won't be return if a version greather than 20.0.0 isn't defined.
 ]);
 
 if (!isset($_GET['code'])) {
