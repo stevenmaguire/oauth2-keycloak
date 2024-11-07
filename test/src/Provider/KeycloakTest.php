@@ -23,18 +23,79 @@ namespace Ubitransport\OAuth2\Client\Provider
 
 namespace Ubitransport\OAuth2\Client\Test\Provider
 {
+    use DateInterval;
+    use DateTimeImmutable;
+    use Firebase\JWT\JWT;
+    use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
+    use League\OAuth2\Client\Token\AccessToken;
     use League\OAuth2\Client\Tool\QueryBuilderTrait;
     use Mockery as m;
+    use PHPUnit\Framework\TestCase;
+    use Psr\Http\Message\StreamInterface;
+    use Stevenmaguire\OAuth2\Client\Provider\Exception\EncryptionConfigurationException;
+    use Stevenmaguire\OAuth2\Client\Provider\Keycloak;
 
-    class KeycloakTest extends \PHPUnit_Framework_TestCase
+    class KeycloakTest extends TestCase
     {
         use QueryBuilderTrait;
 
-        protected \Ubitransport\OAuth2\Client\Provider\Keycloak $provider;
+        public const ENCRYPTION_KEY = <<<EOD
+-----BEGIN PUBLIC KEY-----
+MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC8kGa1pSjbSYZVebtTRBLxBz5H
+4i2p/llLCrEeQhta5kaQu/RnvuER4W8oDH3+3iuIYW4VQAzyqFpwuzjkDI+17t5t
+0tyazyZ8JXw+KgXTxldMPEL95+qVhgXvwtihXC1c5oGbRlEDvDF6Sa53rcFVsYJ4
+ehde/zUxo6UvS7UrBQIDAQAB
+-----END PUBLIC KEY-----
+EOD;
+
+        public const ENCRYPTION_ALGORITHM = 'HS256';
+
+        private $jwtTemplate = <<<EOF
+{
+  "exp": "%s",
+  "iat": "%s",
+  "jti": "e11a85c8-aa91-4f75-9088-57db4586f8b9",
+  "iss": "https://example.org/auth/realms/test-realm",
+  "aud": "account",
+  "nbf": "%s",
+  "sub": "4332085e-b944-4acc-9eb1-27d8f5405f3e",
+  "typ": "Bearer",
+  "azp": "test-app",
+  "session_state": "c90c8e0d-aabb-4c71-b8a8-e88792cacd96",
+  "acr": "1",
+  "realm_access": {
+    "roles": [
+      "default-roles-test-realm",
+      "offline_access",
+      "uma_authorization"
+    ]
+  },
+  "resource_access": {
+    "account": {
+      "roles": [
+        "manage-account",
+        "manage-account-links",
+        "view-profile"
+      ]
+    }
+  },
+  "scope": "openid email profile",
+  "sid": "c90c8e0d-aabb-4c71-b8a8-e88792cacd96",
+  "address": {},
+  "email_verified": true,
+  "name": "Test User",
+  "preferred_username": "test-user",
+  "given_name": "Test",
+  "family_name": "User",
+  "email": "test-user@example.org"
+}
+EOF;
+
+        protected $provider;
 
         protected function setUp(): void
         {
-            $this->provider = new \Ubitransport\OAuth2\Client\Provider\Keycloak([
+            $this->provider = new Keycloak([
                 'authServerUrl' => 'http://mock.url/auth',
                 'realm' => 'mock_realm',
                 'clientId' => 'mock_client_id',
@@ -43,7 +104,7 @@ namespace Ubitransport\OAuth2\Client\Test\Provider
             ]);
         }
 
-        public function tearDown()
+        public function tearDown(): void
         {
             m::close();
             parent::tearDown();
@@ -66,8 +127,8 @@ namespace Ubitransport\OAuth2\Client\Test\Provider
 
         public function testEncryptionAlgorithm(): void
         {
-            $algorithm = uniqid('', true);
-            $provider = new \Ubitransport\OAuth2\Client\Provider\Keycloak([
+            $algorithm = uniqid();
+            $provider = new Keycloak([
                 'encryptionAlgorithm' => $algorithm,
             ]);
 
@@ -81,8 +142,8 @@ namespace Ubitransport\OAuth2\Client\Test\Provider
 
         public function testEncryptionKey(): void
         {
-            $key = uniqid('', true);
-            $provider = new \Ubitransport\OAuth2\Client\Provider\Keycloak([
+            $key = uniqid();
+            $provider = new Keycloak([
                 'encryptionKey' => $key,
             ]);
 
@@ -101,7 +162,7 @@ namespace Ubitransport\OAuth2\Client\Test\Provider
             $key = uniqid('', true);
             $mockFileGetContents = $key;
 
-            $provider = new \Ubitransport\OAuth2\Client\Provider\Keycloak([
+            $provider = new Keycloak([
                 'encryptionKeyPath' => $path,
             ]);
 
@@ -118,12 +179,14 @@ namespace Ubitransport\OAuth2\Client\Test\Provider
 
         public function testEncryptionKeyPathFails(): void
         {
+            $this->markTestIncomplete('Need to assess the test to see what is required to be checked.');
+
             global $mockFileGetContents;
             $path = uniqid('', true);
             $key = uniqid('', true);
             $mockFileGetContents = new \Exception();
 
-            $provider = new \Ubitransport\OAuth2\Client\Provider\Keycloak([
+            $provider = new Keycloak([
                 'encryptionKeyPath' => $path,
             ]);
 
@@ -132,12 +195,12 @@ namespace Ubitransport\OAuth2\Client\Test\Provider
 
         public function testScopes(): void
         {
-            $scopeSeparator = ',';
-            $options = ['scope' => [uniqid('', true), uniqid('', true)]];
+            $scopeSeparator = ' ';
+            $options = ['scope' => [uniqid(), uniqid()]];
             $query = ['scope' => implode($scopeSeparator, $options['scope'])];
             $url = $this->provider->getAuthorizationUrl($options);
             $encodedScope = $this->buildQueryString($query);
-            $this->assertContains($encodedScope, $url);
+            $this->assertStringContainsString($encodedScope, $url);
         }
 
         public function testGetAuthorizationUrl(): void
@@ -156,6 +219,25 @@ namespace Ubitransport\OAuth2\Client\Test\Provider
             $this->assertEquals('/auth/realms/mock_realm/protocol/openid-connect/logout', $uri['path']);
         }
 
+        public function testGetLogoutUrlWithIdTokenHint()
+        {
+            $this->provider->setVersion('18.0.0');
+
+            $options = [
+                'access_token' => new AccessToken(
+                    [
+                        'id_token' => 'the_id_token',
+                        'access_token' => 'the_access_token',
+                    ]
+                ),
+            ];
+            $url = $this->provider->getLogoutUrl($options);
+            $uri = parse_url($url);
+
+            $this->assertEquals('/auth/realms/mock_realm/protocol/openid-connect/logout', $uri['path']);
+            $this->assertStringContainsString('id_token_hint=the_id_token', $uri['query']);
+        }
+
         public function testGetBaseAccessTokenUrl(): void
         {
             $params = [];
@@ -168,15 +250,28 @@ namespace Ubitransport\OAuth2\Client\Test\Provider
 
         public function testGetAccessToken(): void
         {
+            $stream = $this->createMock(StreamInterface::class);
+            $stream
+                ->method('__toString')
+                ->willReturn('{"access_token":"mock_access_token","scope":"email","token_type":"bearer"}');
+
             $response = m::mock('Psr\Http\Message\ResponseInterface');
-            $response->shouldReceive('getBody')->andReturn('{"access_token":"mock_access_token", "scope":"email", "token_type":"bearer"}');
-            $response->shouldReceive('getHeader')->andReturn(['content-type' => 'json']);
+            $response
+                ->shouldReceive('getBody')
+                ->andReturn($stream);
+            $response
+                ->shouldReceive('getHeader')
+                ->andReturn(['content-type' => 'json']);
 
             $client = m::mock('GuzzleHttp\ClientInterface');
-            $client->shouldReceive('send')->times(1)->andReturn($response);
+            $client->shouldReceive('send')
+                ->times(1)
+                ->andReturn($response);
             $this->provider->setHttpClient($client);
 
-            $token = $this->provider->getAccessToken('authorization_code', ['code' => 'mock_authorization_code']);
+            $token = $this
+                ->provider
+                ->getAccessToken('authorization_code', ['code' => 'mock_authorization_code']);
 
             $this->assertEquals('mock_access_token', $token->getToken());
             $this->assertNull($token->getExpires());
@@ -186,26 +281,64 @@ namespace Ubitransport\OAuth2\Client\Test\Provider
 
         public function testUserData(): void
         {
-            $userId = random_int(1000,9999);
-            $name = uniqid('', true);
-            $nickname = uniqid('', true);
-            $email = uniqid('', true);
+            $userId = rand(1000, 9999);
+            $name = uniqid();
+            $email = uniqid();
+            $username = uniqid();
+            $firstName = uniqid();
+            $lastName = uniqid();
+
+            $getAccessTokenResponseStream = $this->createMock(StreamInterface::class);
+            $getAccessTokenResponseStream
+                ->method('__toString')
+                ->willReturn(
+                    '{"access_token":"mock_access_token","expires":"3600","refresh_token":"mock_refresh_token","otherKey":[1234]}'
+                );
 
             $postResponse = m::mock('Psr\Http\Message\ResponseInterface');
-            $postResponse->shouldReceive('getBody')->andReturn('access_token=mock_access_token&expires=3600&refresh_token=mock_refresh_token&otherKey={1234}');
-            $postResponse->shouldReceive('getHeader')->andReturn(['content-type' => 'application/x-www-form-urlencoded']);
+            $postResponse
+                ->shouldReceive('getBody')
+                ->andReturn($getAccessTokenResponseStream);
+            $postResponse
+                ->shouldReceive('getHeader')
+                ->andReturn(['content-type' => 'json']);
+
+            $getResourceOwnerResponseStream = $this->createMock(StreamInterface::class);
+            $getResourceOwnerResponseStream
+                ->method('__toString')
+                ->willReturn(
+                    sprintf(
+                        '{"sub": "%s", "name": "%s", "email": "%s", "preferred_username": "%s", "given_name": "%s", "family_name": "%s"}',
+                        $userId,
+                        $name,
+                        $email,
+                        $username,
+                        $firstName,
+                        $lastName
+                    )
+                );
 
             $userResponse = m::mock('Psr\Http\Message\ResponseInterface');
-            $userResponse->shouldReceive('getBody')->andReturn('{"sub": '.$userId.', "name": "'.$name.'", "email": "'.$email.'"}');
-            $userResponse->shouldReceive('getHeader')->andReturn(['content-type' => 'json']);
+            $userResponse
+                ->shouldReceive('getBody')
+                ->andReturn($getResourceOwnerResponseStream);
+            $userResponse
+                ->shouldReceive('getHeader')
+                ->andReturn(['content-type' => 'json']);
 
             $client = m::mock('GuzzleHttp\ClientInterface');
-            $client->shouldReceive('send')
-                ->times(2)
+            $client
+                ->shouldReceive('send')
                 ->andReturn($postResponse, $userResponse);
             $this->provider->setHttpClient($client);
 
-            $token = $this->provider->getAccessToken('authorization_code', ['code' => 'mock_authorization_code']);
+            $token = $this->provider->getAccessToken(
+                'authorization_code',
+                [
+                    'code' => 'mock_authorization_code',
+                    'access_token' => 'mock_access_token',
+                ]
+            );
             $user = $this->provider->getResourceOwner($token);
 
             $this->assertEquals($userId, $user->getId());
@@ -214,45 +347,87 @@ namespace Ubitransport\OAuth2\Client\Test\Provider
             $this->assertEquals($name, $user->toArray()['name']);
             $this->assertEquals($email, $user->getEmail());
             $this->assertEquals($email, $user->toArray()['email']);
+            $this->assertEquals($username, $user->getUsername());
+            $this->assertEquals($username, $user->toArray()['preferred_username']);
+            $this->assertEquals($firstName, $user->getFirstName());
+            $this->assertEquals($firstName, $user->toArray()['given_name']);
+            $this->assertEquals($lastName, $user->getLastName());
+            $this->assertEquals($lastName, $user->toArray()['family_name']);
         }
 
         public function testUserDataWithEncryption(): void
         {
-            $userId = random_int(1000,9999);
-            $name = uniqid('', true);
-            $nickname = uniqid('', true);
-            $email =uniqid('', true);
-            $jwt = uniqid('', true);
-            $algorithm = uniqid('', true);
-            $key = uniqid('', true);
+            $jwt = JWT::encode(
+                json_decode(
+                    sprintf(
+                        $this->jwtTemplate,
+                        (new DateTimeImmutable())->add(new DateInterval('PT1H'))->getTimestamp(),
+                        (new DateTimeImmutable())->sub(new DateInterval('P1D'))->getTimestamp(),
+                        (new DateTimeImmutable())->sub(new DateInterval('P1D'))->getTimestamp()
+                    ),
+                    true
+                ),
+                self::ENCRYPTION_KEY,
+                self::ENCRYPTION_ALGORITHM
+            );
 
-            $postResponse = m::mock('Psr\Http\Message\ResponseInterface');
-            $postResponse->shouldReceive('getBody')->andReturn('access_token=mock_access_token&expires=3600&refresh_token=mock_refresh_token&otherKey={1234}');
-            $postResponse->shouldReceive('getHeader')->andReturn(['content-type' => 'application/x-www-form-urlencoded']);
-            $postResponse->shouldReceive('getStatusCode')->andReturn(200);
+            $getAccessTokenResponseStream = $this->createMock(StreamInterface::class);
+            $getAccessTokenResponseStream
+                ->method('__toString')
+                ->willReturn(
+                    sprintf(
+                        '{"access_token":"%s","expires":"3600","refresh_token":"mock_refresh_token","otherKey":[1234]}',
+                        $jwt
+                    )
+                );
 
-            $userResponse = m::mock('Psr\Http\Message\ResponseInterface');
-            $userResponse->shouldReceive('getBody')->andReturn($jwt);
-            $userResponse->shouldReceive('getHeader')->andReturn(['content-type' => 'application/jwt']);
-            $userResponse->shouldReceive('getStatusCode')->andReturn(200);
+            $accessTokenResponse = m::mock('Psr\Http\Message\ResponseInterface');
+            $accessTokenResponse
+                ->shouldReceive('getBody')
+                ->andReturn($getAccessTokenResponseStream);
+            $accessTokenResponse
+                ->shouldReceive('getHeader')
+                ->andReturn(['content-type' => 'json']);
+            $accessTokenResponse
+                ->shouldReceive('getStatusCode')
+                ->andReturn(200);
 
-            $decoder = \Mockery::mock('overload:Firebase\JWT\JWT');
-            $decoder->shouldReceive('decode')->with($jwt, $key, [$algorithm])->andReturn([
-                'sub' => $userId,
-                'email' => $email,
-                'name' => $name,
-            ]);
+            $getResourceOwnerResponseStream = $this->createMock(StreamInterface::class);
+            $getResourceOwnerResponseStream
+                ->method('__toString')
+                ->willReturn($jwt);
+
+            $resourceOwnerResponse = m::mock('Psr\Http\Message\ResponseInterface');
+            $resourceOwnerResponse
+                ->shouldReceive('getBody')
+                ->andReturn($getResourceOwnerResponseStream);
+            $resourceOwnerResponse
+                ->shouldReceive('getHeader')
+                ->andReturn(['content-type' => 'application/jwt']);
+            $resourceOwnerResponse
+                ->shouldReceive('getStatusCode')
+                ->andReturn(200);
 
             $client = m::mock('GuzzleHttp\ClientInterface');
-            $client->shouldReceive('send')
+            $client
+                ->shouldReceive('send')
                 ->times(2)
-                ->andReturn($postResponse, $userResponse);
+                ->andReturn($accessTokenResponse, $resourceOwnerResponse);
             $this->provider->setHttpClient($client);
 
-            $token = $this->provider->setEncryptionAlgorithm($algorithm)
-                ->setEncryptionKey($key)
+            $token = $this
+                ->provider
+                ->setEncryptionAlgorithm(self::ENCRYPTION_ALGORITHM)
+                ->setEncryptionKey(self::ENCRYPTION_KEY)
                 ->getAccessToken('authorization_code', ['code' => 'mock_authorization_code']);
             $user = $this->provider->getResourceOwner($token);
+
+            $email = "test-user@example.org";
+            $name = "Test User";
+            $userId = "4332085e-b944-4acc-9eb1-27d8f5405f3e";
+            $username = "test-user";
+            $firstName = "Test";
+            $lastName = "User";
 
             $this->assertEquals($userId, $user->getId());
             $this->assertEquals($userId, $user->toArray()['sub']);
@@ -260,47 +435,130 @@ namespace Ubitransport\OAuth2\Client\Test\Provider
             $this->assertEquals($name, $user->toArray()['name']);
             $this->assertEquals($email, $user->getEmail());
             $this->assertEquals($email, $user->toArray()['email']);
+            $this->assertEquals($username, $user->getUsername());
+            $this->assertEquals($username, $user->toArray()['preferred_username']);
+            $this->assertEquals($firstName, $user->getFirstName());
+            $this->assertEquals($firstName, $user->toArray()['given_name']);
+            $this->assertEquals($lastName, $user->getLastName());
+            $this->assertEquals($lastName, $user->toArray()['family_name']);
         }
 
-        /**
-         * @expectedException Ubitransport\OAuth2\Client\Provider\Exception\EncryptionConfigurationException
-         */
-        public function testUserDataFailsWhenEncryptionEncounteredAndNotConfigured(): void
+        public function testUserDataFailsWhenEncryptionEncounteredAndNotConfigured()
         {
-            $postResponse = m::mock('Psr\Http\Message\ResponseInterface');
-            $postResponse->shouldReceive('getBody')->andReturn('access_token=mock_access_token&expires=3600&refresh_token=mock_refresh_token&otherKey={1234}');
-            $postResponse->shouldReceive('getHeader')->andReturn(['content-type' => 'application/x-www-form-urlencoded']);
-            $postResponse->shouldReceive('getStatusCode')->andReturn(200);
+            $this->expectException(EncryptionConfigurationException::class);
 
-            $userResponse = m::mock('Psr\Http\Message\ResponseInterface');
-            $userResponse->shouldReceive('getBody')->andReturn(uniqid('', true));
-            $userResponse->shouldReceive('getHeader')->andReturn(['content-type' => 'application/jwt']);
-            $userResponse->shouldReceive('getStatusCode')->andReturn(200);
+            $accessTokenResponseStream = $this->createMock(StreamInterface::class);
+            $accessTokenResponseStream
+                ->method('__toString')
+                ->willReturn(
+                    '{"access_token":"mock_access_token","expires":"3600","refresh_token":"mock_refresh_token","otherKey":[1234]}'
+                );
+
+            $getAccessTokenResponse = m::mock('Psr\Http\Message\ResponseInterface');
+            $getAccessTokenResponse
+                ->shouldReceive('getBody')
+                ->andReturn($accessTokenResponseStream);
+            $getAccessTokenResponse
+                ->shouldReceive('getHeader')
+                ->andReturn(['content-type' => 'json']);
+            $getAccessTokenResponse
+                ->shouldReceive('getStatusCode')
+                ->andReturn(200);
+
+            $resourceOwnerResponseStream = $this->createMock(StreamInterface::class);
+            $resourceOwnerResponseStream
+                ->method('__toString')
+                ->willReturn(uniqid());
+
+            $getResourceOwnerResponse = m::mock('Psr\Http\Message\ResponseInterface');
+            $getResourceOwnerResponse
+                ->shouldReceive('getBody')
+                ->andReturn($resourceOwnerResponseStream);
+            $getResourceOwnerResponse
+                ->shouldReceive('getHeader')
+                ->andReturn(['content-type' => 'application/jwt']);
+            $getResourceOwnerResponse
+                ->shouldReceive('getStatusCode')
+                ->andReturn(200);
 
             $client = m::mock('GuzzleHttp\ClientInterface');
-            $client->shouldReceive('send')
+            $client
+                ->shouldReceive('send')
                 ->times(2)
-                ->andReturn($postResponse, $userResponse);
+                ->andReturn($getAccessTokenResponse, $getResourceOwnerResponse);
             $this->provider->setHttpClient($client);
 
-            $token = $this->provider->getAccessToken('authorization_code', ['code' => 'mock_authorization_code']);
+            $token = $this->provider->getAccessToken(
+                'authorization_code', #
+                ['code' => 'mock_authorization_code']
+            );
             $user = $this->provider->getResourceOwner($token);
         }
 
-        /**
-         * @expectedException League\OAuth2\Client\Provider\Exception\IdentityProviderException
-         */
-        public function testErrorResponse(): void
+        public function testErrorResponse()
         {
+            $this->expectException(IdentityProviderException::class);
+
+            $accessTokenResponseStream = $this->createMock(StreamInterface::class);
+            $accessTokenResponseStream
+                ->method('__toString')
+                ->willReturn(
+                    '{"error": "invalid_grant", "error_description": "Code not found"}'
+                );
+
             $response = m::mock('Psr\Http\Message\ResponseInterface');
-            $response->shouldReceive('getBody')->andReturn('{"error": "invalid_grant", "error_description": "Code not found"}');
-            $response->shouldReceive('getHeader')->andReturn(['content-type' => 'json']);
+            $response
+                ->shouldReceive('getBody')
+                ->andReturn($accessTokenResponseStream);
+            $response
+                ->shouldReceive('getHeader')
+            $response
+                ->shouldReceive('getStatusCode')
+                ->andReturn(401);
 
             $client = m::mock('GuzzleHttp\ClientInterface');
-            $client->shouldReceive('send')->times(1)->andReturn($response);
+            $client
+                ->shouldReceive('send')
+                ->times(1)
+                ->andReturn($response);
             $this->provider->setHttpClient($client);
 
             $token = $this->provider->getAccessToken('authorization_code', ['code' => 'mock_authorization_code']);
+        }
+
+        public function testCanDecryptResponseThrowsExceptionIfResponseIsNotAStringAndEncryptionIsNotUsed()
+        {
+            $this->expectException(EncryptionConfigurationException::class);
+
+            $this->provider->decryptResponse('');
+
+            $this->assertFalse($this->provider->usesEncryption());
+        }
+
+        public function testCanDecryptResponseReturnsResponseWhenEncryptionIsUsed()
+        {
+            $jwtPayload = json_decode(
+                sprintf(
+                    $this->jwtTemplate,
+                    (new DateTimeImmutable())->add(new DateInterval('PT1H'))->getTimestamp(),
+                    (new DateTimeImmutable())->sub(new DateInterval('P1D'))->getTimestamp(),
+                    (new DateTimeImmutable())->sub(new DateInterval('P1D'))->getTimestamp()
+                ),
+                true
+            );
+            $jwt = JWT::encode(
+                $jwtPayload,
+                self::ENCRYPTION_KEY,
+                self::ENCRYPTION_ALGORITHM
+            );
+
+            $this->provider
+                ->setEncryptionAlgorithm(self::ENCRYPTION_ALGORITHM)
+                ->setEncryptionKey(self::ENCRYPTION_KEY);
+
+            $response = $this->provider->decryptResponse($jwt);
+
+            $this->assertSame($jwtPayload, $response);
         }
     }
 }

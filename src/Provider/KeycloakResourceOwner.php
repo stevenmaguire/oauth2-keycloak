@@ -18,7 +18,7 @@ class KeycloakResourceOwner implements ResourceOwnerInterface
      */
     public function getId(): ?string
     {
-        return $this->response['sub'] ?: null;
+        return \array_key_exists('sub', $this->response) ? $this->response['sub'] : null;
     }
 
     /**
@@ -26,7 +26,7 @@ class KeycloakResourceOwner implements ResourceOwnerInterface
      */
     public function getEmail(): ?string
     {
-        return $this->response['email'] ?: null;
+        return \array_key_exists('email', $this->response) ? $this->response['email'] : null;
     }
 
     /**
@@ -34,7 +34,37 @@ class KeycloakResourceOwner implements ResourceOwnerInterface
      */
     public function getName(): ?string
     {
-        return $this->response['name'] ?: null;
+        return \array_key_exists('name', $this->response) ? $this->response['name'] : null;
+    }
+
+    /**
+     * Get resource owner username
+     *
+     * @return string|null
+     */
+    public function getUsername()
+    {
+        return \array_key_exists('preferred_username', $this->response) ? $this->response['preferred_username'] : null;
+    }
+
+    /**
+     * Get resource owner first name
+     *
+     * @return string|null
+     */
+    public function getFirstName()
+    {
+        return \array_key_exists('given_name', $this->response) ? $this->response['given_name'] : null;
+    }
+
+    /**
+     * Get resource owner last name
+     *
+     * @return string|null
+     */
+    public function getLastName()
+    {
+        return \array_key_exists('family_name', $this->response) ? $this->response['family_name'] : null;
     }
 
     /**

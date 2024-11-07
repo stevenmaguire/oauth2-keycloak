@@ -4,12 +4,14 @@ namespace Ubitransport\OAuth2\Client\Provider;
 
 use Exception;
 use Firebase\JWT\JWT;
+use Firebase\JWT\Key;
 use League\OAuth2\Client\Provider\AbstractProvider;
 use League\OAuth2\Client\Provider\Exception\IdentityProviderException;
 use League\OAuth2\Client\Token\AccessToken;
 use League\OAuth2\Client\Tool\BearerAuthorizationTrait;
 use Psr\Http\Message\ResponseInterface;
-use Ubitransport\OAuth2\Client\Provider\Exception\EncryptionConfigurationException;
+use Stevenmaguire\OAuth2\Client\Provider\Exception\EncryptionConfigurationException;
+use UnexpectedValueException;
 
 class Keycloak extends AbstractProvider
 {
@@ -25,6 +27,13 @@ class Keycloak extends AbstractProvider
     private ?AccessToken $adminAccessToken = null;
     public const METHOD_GET = 'GET';
     public const METHOD_POST = 'POST';
+
+    /**
+      * Keycloak version.
+      *
+      * @var string
+      */
+    public $version = null;
 
     /**
      * Constructs an OAuth 2.0 service provider.
@@ -43,6 +52,11 @@ class Keycloak extends AbstractProvider
             $this->setEncryptionKeyPath($options['encryptionKeyPath']);
             unset($options['encryptionKeyPath']);
         }
+
+        if (isset($options['version'])) {
+            $this->setVersion($options['version']);
+        }
+
         parent::__construct($options, $collaborators);
     }
 
@@ -53,7 +67,6 @@ class Keycloak extends AbstractProvider
      *
      * @return string|array|null
      * @throws EncryptionConfigurationException
-     * @throws \JsonException
      */
     public function decryptResponse($response)
     {
@@ -66,7 +79,7 @@ class Keycloak extends AbstractProvider
                     JWT::decode(
                         $response,
                         $this->encryptionKey,
-                        array($this->encryptionAlgorithm)
+                        $this->encryptionAlgorithm
                     ),
                     JSON_THROW_ON_ERROR
                 ),
@@ -110,6 +123,21 @@ class Keycloak extends AbstractProvider
     {
         $base = $this->getBaseLogoutUrl();
         $params = $this->getAuthorizationParameters($options);
+
+        // Starting with keycloak 18.0.0, the parameter redirect_uri is no longer supported on logout.
+        // As of this version the parameter is called post_logout_redirect_uri. In addition to this
+        // a parameter id_token_hint has to be provided.
+        if ($this->validateGteVersion('18.0.0')) {
+            if (isset($options['access_token']) === true) {
+                $accessToken = $options['access_token'];
+
+                $params['id_token_hint'] = $accessToken->getValues()['id_token'];
+                $params['post_logout_redirect_uri'] = $params['redirect_uri'];
+            }
+
+            unset($params['redirect_uri']);
+        }
+
         $query = $this->getAuthorizationQuery($params);
 
         return $this->appendQuery($base, $query);
@@ -145,8 +173,27 @@ class Keycloak extends AbstractProvider
      */
     protected function getDefaultScopes(): array
     {
-        return ['name', 'email'];
+        $scopes = [
+            'profile',
+            'email'
+        ];
+        if ($this->validateGteVersion('20.0.0')) {
+            $scopes[] = 'openid';
+        }
+        return $scopes;
     }
+
+    /**
+     * Returns the string that should be used to separate scopes when building
+     * the URL for requesting an access token.
+     *
+     * @return string Scope separator, defaults to ','
+     */
+    protected function getScopeSeparator()
+    {
+        return ' ';
+    }
+
 
     /**
      * Returns the string that should be used to separate scopes when building
@@ -168,8 +215,11 @@ class Keycloak extends AbstractProvider
     protected function checkResponse(ResponseInterface $response, $data): void
     {
         if (!empty($data['error'])) {
-            $error = $data['error'].': '.$data['error_description'];
-            throw new IdentityProviderException($error, 0, $data);
+            $error = $data['error'];
+            if (isset($data['error_description'])) {
+                $error .= ': '.$data['error_description'];
+            }
+            throw new IdentityProviderException($error, $response->getStatusCode(), $data);
         }
     }
 
@@ -184,10 +234,20 @@ class Keycloak extends AbstractProvider
     /**
      * Requests and returns the resource owner of given access token.
      *
+     * @param  AccessToken $token
+     * @return KeycloakResourceOwner
+     * @throws EncryptionConfigurationException
      */
     public function getResourceOwner(AccessToken $token): KeycloakResourceOwner
     {
         $response = $this->fetchResourceOwnerDetails($token);
+
+        // We are always getting an array. We have to check if it is
+        // the array we created
+        if (array_key_exists('jwt', $response)) {
+            $response = $response['jwt'];
+        }
+
         $response = $this->decryptResponse($response);
 
         return $this->createResourceOwner($response, $token);
@@ -236,6 +296,20 @@ class Keycloak extends AbstractProvider
         } catch (Exception $e) {
             // Not sure how to handle this yet.
         }
+
+        return $this;
+    }
+
+     /**
+      * Updates the keycloak version.
+      *
+      * @param string  $version
+      *
+      * @return Keycloak
+      */
+    public function setVersion($version)
+    {
+        $this->version = $version;
 
         return $this;
     }
@@ -289,6 +363,44 @@ class Keycloak extends AbstractProvider
 
         return $token;
     }
+
+    /**
+     * Parses the response according to its content-type header.
+     *
+     * @throws UnexpectedValueException
+     * @param  ResponseInterface $response
+     * @return array
+     */
+    protected function parseResponse(ResponseInterface $response)
+    {
+        // We have a problem with keycloak when the userinfo responses
+        // with a jwt token
+        // Because it just return a jwt as string with the header
+        // application/jwt
+        // This can't be parsed to a array
+        // Dont know why this function only allow an array as return value...
+        $content = (string) $response->getBody();
+        $type = $this->getContentType($response);
+
+        if (strpos($type, 'jwt') !== false) {
+            // Here we make the temporary array
+            return ['jwt' => $content];
+        }
+
+        return parent::parseResponse($response);
+    }
+
+    /**
+     * Validate if version is greater or equal
+     *
+     * @param string $version
+     * @return bool
+     */
+    private function validateGteVersion($version)
+    {
+        return (isset($this->version) && version_compare($this->version, $version, '>='));
+    }
+
 
     public function getAccessTokenUsingClientCredentials(): AccessToken
     {

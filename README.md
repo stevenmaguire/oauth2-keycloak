@@ -36,6 +36,7 @@ $provider = new Stevenmaguire\OAuth2\Client\Provider\Keycloak([
     'encryptionAlgorithm'   => 'RS256',                             // optional
     'encryptionKeyPath'     => '../key.pem'                         // optional
     'encryptionKey'         => 'contents_of_key_or_certificate'     // optional
+    'version'               => '20.0.1',                            // optional
 ]);
 
 if (!isset($_GET['code'])) {
@@ -166,6 +167,7 @@ Please see [CONTRIBUTING](https://github.com/stevenmaguire/oauth2-keycloak/blob/
 ## Credits
 
 - [Steven Maguire](https://github.com/stevenmaguire)
+- [Martin Stefan](https://github.com/mstefan21)
 - [All Contributors](https://github.com/stevenmaguire/oauth2-keycloak/contributors)
 
 
