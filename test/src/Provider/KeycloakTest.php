@@ -1,16 +1,16 @@
 <?php
 
-namespace
-{
+namespace {
+
     $mockFileGetContents = null;
 }
 
-namespace Ubitransport\OAuth2\Client\Provider
-{
+namespace Ubitransport\OAuth2\Client\Provider {
+
     function file_get_contents()
     {
         global $mockFileGetContents;
-        if (isset($mockFileGetContents) && ! is_null($mockFileGetContents)) {
+        if (isset($mockFileGetContents) && !is_null($mockFileGetContents)) {
             if (is_a($mockFileGetContents, 'Exception')) {
                 throw $mockFileGetContents;
             }
@@ -21,8 +21,8 @@ namespace Ubitransport\OAuth2\Client\Provider
     }
 }
 
-namespace Ubitransport\OAuth2\Client\Test\Provider
-{
+namespace Ubitransport\OAuth2\Client\Test\Provider {
+
     use DateInterval;
     use DateTimeImmutable;
     use Firebase\JWT\JWT;
@@ -511,7 +511,7 @@ EOF;
                 ->shouldReceive('getBody')
                 ->andReturn($accessTokenResponseStream);
             $response
-                ->shouldReceive('getHeader')
+                ->shouldReceive('getHeader');
             $response
                 ->shouldReceive('getStatusCode')
                 ->andReturn(401);
