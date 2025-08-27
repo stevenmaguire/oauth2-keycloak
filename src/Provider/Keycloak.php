@@ -87,6 +87,7 @@ class Keycloak extends AbstractProvider
 
         if (isset($options['pkceMethod'])) {
             $this->pkceMethod = $options['pkceMethod'];
+            unset($options['pkceMethod']);
         }
 
         parent::__construct($options, $collaborators);
