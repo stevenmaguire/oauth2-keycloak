@@ -57,6 +57,13 @@ class Keycloak extends AbstractProvider
     public $version = null;
 
     /**
+      * PKCE method for authentication.
+      *
+      * @var string
+      */
+    private $pkceMethod = null;
+
+    /**
      * Constructs an OAuth 2.0 service provider.
      *
      * @param array $options An array of options to set on this provider.
@@ -76,6 +83,10 @@ class Keycloak extends AbstractProvider
 
         if (isset($options['version'])) {
             $this->setVersion($options['version']);
+        }
+
+        if (isset($options['pkceMethod'])) {
+            $this->pkceMethod = $options['pkceMethod'];
         }
 
         parent::__construct($options, $collaborators);
@@ -387,5 +398,10 @@ class Keycloak extends AbstractProvider
     private function validateGteVersion($version)
     {
         return (isset($this->version) && version_compare($this->version, $version, '>='));
+    }
+
+    protected function getPkceMethod()
+    {
+        return $this->pkceMethod ?: parent::getPkceMethod();
     }
 }
