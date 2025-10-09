@@ -28,7 +28,7 @@ class KeycloakResourceOwner implements ResourceOwnerInterface
      *
      * @return string|null
      */
-    public function getId()
+    public function getId(): ?string
     {
         return \array_key_exists('sub', $this->response) ? $this->response['sub'] : null;
     }
@@ -38,7 +38,7 @@ class KeycloakResourceOwner implements ResourceOwnerInterface
      *
      * @return string|null
      */
-    public function getEmail()
+    public function getEmail(): ?string
     {
         return \array_key_exists('email', $this->response) ? $this->response['email'] : null;
     }
@@ -48,7 +48,7 @@ class KeycloakResourceOwner implements ResourceOwnerInterface
      *
      * @return string|null
      */
-    public function getName()
+    public function getName(): ?string
     {
         return \array_key_exists('name', $this->response) ? $this->response['name'] : null;
     }
@@ -58,7 +58,7 @@ class KeycloakResourceOwner implements ResourceOwnerInterface
      *
      * @return string|null
      */
-    public function getUsername()
+    public function getUsername(): ?string
     {
         return \array_key_exists('preferred_username', $this->response) ? $this->response['preferred_username'] : null;
     }
@@ -68,7 +68,7 @@ class KeycloakResourceOwner implements ResourceOwnerInterface
      *
      * @return string|null
      */
-    public function getFirstName()
+    public function getFirstName(): ?string
     {
         return \array_key_exists('given_name', $this->response) ? $this->response['given_name'] : null;
     }
@@ -78,7 +78,7 @@ class KeycloakResourceOwner implements ResourceOwnerInterface
      *
      * @return string|null
      */
-    public function getLastName()
+    public function getLastName(): ?string
     {
         return \array_key_exists('family_name', $this->response) ? $this->response['family_name'] : null;
     }
@@ -88,7 +88,7 @@ class KeycloakResourceOwner implements ResourceOwnerInterface
      *
      * @return array
      */
-    public function toArray()
+    public function toArray(): array
     {
         return $this->response;
     }

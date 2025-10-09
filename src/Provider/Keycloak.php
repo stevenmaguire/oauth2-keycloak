@@ -118,7 +118,7 @@ class Keycloak extends AbstractProvider
      *
      * @return string
      */
-    public function getBaseAuthorizationUrl()
+    public function getBaseAuthorizationUrl(): string
     {
         return $this->getBaseUrlWithRealm().'/protocol/openid-connect/auth';
     }
@@ -130,7 +130,7 @@ class Keycloak extends AbstractProvider
      *
      * @return string
      */
-    public function getBaseAccessTokenUrl(array $params)
+    public function getBaseAccessTokenUrl(array $params): string
     {
         return $this->getBaseUrlWithRealm().'/protocol/openid-connect/token';
     }
@@ -142,7 +142,7 @@ class Keycloak extends AbstractProvider
      *
      * @return string
      */
-    public function getResourceOwnerDetailsUrl(AccessToken $token)
+    public function getResourceOwnerDetailsUrl(AccessToken $token): string
     {
         return $this->getBaseUrlWithRealm().'/protocol/openid-connect/userinfo';
     }
@@ -153,7 +153,7 @@ class Keycloak extends AbstractProvider
      * @param array $options
      * @return string Authorization URL
      */
-    public function getLogoutUrl(array $options = [])
+    public function getLogoutUrl(array $options = []): string
     {
         $base = $this->getBaseLogoutUrl();
         $params = $this->getAuthorizationParameters($options);
@@ -181,7 +181,7 @@ class Keycloak extends AbstractProvider
      *
      * @return string
      */
-    private function getBaseLogoutUrl()
+    private function getBaseLogoutUrl(): string
     {
         return $this->getBaseUrlWithRealm() . '/protocol/openid-connect/logout';
     }
@@ -191,7 +191,7 @@ class Keycloak extends AbstractProvider
      *
      * @return string
      */
-    protected function getBaseUrlWithRealm()
+    protected function getBaseUrlWithRealm(): string
     {
         return $this->authServerUrl.'/realms/'.$this->realm;
     }
@@ -204,7 +204,7 @@ class Keycloak extends AbstractProvider
      *
      * @return string[]
      */
-    protected function getDefaultScopes()
+    protected function getDefaultScopes(): array
     {
         $scopes = [
             'profile',
@@ -222,7 +222,7 @@ class Keycloak extends AbstractProvider
      *
      * @return string Scope separator, defaults to ','
      */
-    protected function getScopeSeparator()
+    protected function getScopeSeparator(): string
     {
         return ' ';
     }
@@ -236,7 +236,7 @@ class Keycloak extends AbstractProvider
      * @param  string $data Parsed response data
      * @return void
      */
-    protected function checkResponse(ResponseInterface $response, $data)
+    protected function checkResponse(ResponseInterface $response, $data): void
     {
         if (!empty($data['error'])) {
             $error = $data['error'];
@@ -254,7 +254,7 @@ class Keycloak extends AbstractProvider
      * @param AccessToken $token
      * @return KeycloakResourceOwner
      */
-    protected function createResourceOwner(array $response, AccessToken $token)
+    protected function createResourceOwner(array $response, AccessToken $token): KeycloakResourceOwner
     {
         return new KeycloakResourceOwner($response);
     }
@@ -266,7 +266,7 @@ class Keycloak extends AbstractProvider
      * @return KeycloakResourceOwner
      * @throws EncryptionConfigurationException
      */
-    public function getResourceOwner(AccessToken $token)
+    public function getResourceOwner(AccessToken $token): KeycloakResourceOwner
     {
         $response = $this->fetchResourceOwnerDetails($token);
 
@@ -284,11 +284,11 @@ class Keycloak extends AbstractProvider
     /**
      * Updates expected encryption algorithm of Keycloak instance.
      *
-     * @param string  $encryptionAlgorithm
+     * @param string $encryptionAlgorithm
      *
      * @return Keycloak
      */
-    public function setEncryptionAlgorithm($encryptionAlgorithm)
+    public function setEncryptionAlgorithm(string $encryptionAlgorithm): Keycloak
     {
         $this->encryptionAlgorithm = $encryptionAlgorithm;
 
@@ -298,11 +298,11 @@ class Keycloak extends AbstractProvider
     /**
      * Updates expected encryption key of Keycloak instance.
      *
-     * @param string  $encryptionKey
+     * @param string $encryptionKey
      *
      * @return Keycloak
      */
-    public function setEncryptionKey($encryptionKey)
+    public function setEncryptionKey(string $encryptionKey): Keycloak
     {
         $this->encryptionKey = $encryptionKey;
 
@@ -313,11 +313,11 @@ class Keycloak extends AbstractProvider
      * Updates expected encryption key of Keycloak instance to content of given
      * file path.
      *
-     * @param string  $encryptionKeyPath
+     * @param string $encryptionKeyPath
      *
      * @return Keycloak
      */
-    public function setEncryptionKeyPath($encryptionKeyPath)
+    public function setEncryptionKeyPath(string $encryptionKeyPath): Keycloak
     {
         try {
             $this->encryptionKey = file_get_contents($encryptionKeyPath);
@@ -331,11 +331,11 @@ class Keycloak extends AbstractProvider
      /**
       * Updates the keycloak version.
       *
-      * @param string  $version
+      * @param string $version
       *
       * @return Keycloak
       */
-    public function setVersion($version)
+    public function setVersion(string $version): Keycloak
     {
         $this->version = $version;
 
@@ -347,7 +347,7 @@ class Keycloak extends AbstractProvider
      *
      * @return bool
      */
-    public function usesEncryption()
+    public function usesEncryption(): bool
     {
         return (bool) $this->encryptionAlgorithm && $this->encryptionKey;
     }
@@ -359,7 +359,7 @@ class Keycloak extends AbstractProvider
      * @param  ResponseInterface $response
      * @return array
      */
-    protected function parseResponse(ResponseInterface $response)
+    protected function parseResponse(ResponseInterface $response): array
     {
         // We have a problem with keycloak when the userinfo responses
         // with a jwt token
@@ -382,9 +382,10 @@ class Keycloak extends AbstractProvider
      * Validate if version is greater or equal
      *
      * @param string $version
+     *
      * @return bool
      */
-    private function validateGteVersion($version)
+    private function validateGteVersion(string $version): bool
     {
         return (isset($this->version) && version_compare($this->version, $version, '>='));
     }
