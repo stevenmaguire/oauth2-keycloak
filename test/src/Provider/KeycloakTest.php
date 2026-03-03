@@ -7,7 +7,7 @@ namespace
 
 namespace Stevenmaguire\OAuth2\Client\Provider
 {
-    function file_get_contents()
+    function file_get_contents(...$args): string|false
     {
         global $mockFileGetContents;
         if (isset($mockFileGetContents) && ! is_null($mockFileGetContents)) {
@@ -16,7 +16,7 @@ namespace Stevenmaguire\OAuth2\Client\Provider
             }
             return $mockFileGetContents;
         } else {
-            return call_user_func_array('\file_get_contents', func_get_args());
+            return \file_get_contents(...$args);
         }
     }
 }
@@ -50,7 +50,7 @@ EOD;
 
         public const ENCRYPTION_ALGORITHM = 'HS256';
 
-        private $jwtTemplate = <<<EOF
+        private string $jwtTemplate = <<<EOF
 {
   "exp": "%s",
   "iat": "%s",
@@ -91,7 +91,7 @@ EOD;
 }
 EOF;
 
-        protected $provider;
+        protected Keycloak $provider;
 
         protected function setUp(): void
         {
@@ -110,7 +110,7 @@ EOF;
             parent::tearDown();
         }
 
-        public function testAuthorizationUrl()
+        public function testAuthorizationUrl(): void
         {
             $url = $this->provider->getAuthorizationUrl();
             $uri = parse_url($url);
@@ -125,7 +125,7 @@ EOF;
             $this->assertNotNull($this->provider->getState());
         }
 
-        public function testEncryptionAlgorithm()
+        public function testEncryptionAlgorithm(): void
         {
             $algorithm = uniqid();
             $provider = new Keycloak([
@@ -140,7 +140,7 @@ EOF;
             $this->assertEquals($algorithm, $provider->encryptionAlgorithm);
         }
 
-        public function testEncryptionKey()
+        public function testEncryptionKey(): void
         {
             $key = uniqid();
             $provider = new Keycloak([
@@ -155,7 +155,7 @@ EOF;
             $this->assertEquals($key, $provider->encryptionKey);
         }
 
-        public function testEncryptionKeyPath()
+        public function testEncryptionKeyPath(): void
         {
             global $mockFileGetContents;
             $path = uniqid();
@@ -177,7 +177,7 @@ EOF;
             $this->assertEquals($key, $provider->encryptionKey);
         }
 
-        public function testEncryptionKeyPathFails()
+        public function testEncryptionKeyPathFails(): void
         {
             $this->markTestIncomplete('Need to assess the test to see what is required to be checked.');
 
@@ -193,7 +193,7 @@ EOF;
             $provider->setEncryptionKeyPath($path);
         }
 
-        public function testScopes()
+        public function testScopes(): void
         {
             $scopeSeparator = ' ';
             $options = ['scope' => [uniqid(), uniqid()]];
@@ -203,7 +203,7 @@ EOF;
             $this->assertStringContainsString($encodedScope, $url);
         }
 
-        public function testGetAuthorizationUrl()
+        public function testGetAuthorizationUrl(): void
         {
             $url = $this->provider->getAuthorizationUrl();
             $uri = parse_url($url);
@@ -211,7 +211,7 @@ EOF;
             $this->assertEquals('/auth/realms/mock_realm/protocol/openid-connect/auth', $uri['path']);
         }
 
-        public function testGetLogoutUrl()
+        public function testGetLogoutUrl(): void
         {
             $url = $this->provider->getLogoutUrl();
             $uri = parse_url($url);
@@ -219,7 +219,7 @@ EOF;
             $this->assertEquals('/auth/realms/mock_realm/protocol/openid-connect/logout', $uri['path']);
         }
 
-        public function testGetLogoutUrlWithIdTokenHint()
+        public function testGetLogoutUrlWithIdTokenHint(): void
         {
             $this->provider->setVersion('18.0.0');
 
@@ -238,7 +238,7 @@ EOF;
             $this->assertStringContainsString('id_token_hint=the_id_token', $uri['query']);
         }
 
-        public function testGetBaseAccessTokenUrl()
+        public function testGetBaseAccessTokenUrl(): void
         {
             $params = [];
 
@@ -248,7 +248,7 @@ EOF;
             $this->assertEquals('/auth/realms/mock_realm/protocol/openid-connect/token', $uri['path']);
         }
 
-        public function testGetAccessToken()
+        public function testGetAccessToken(): void
         {
             $stream = $this->createMock(StreamInterface::class);
             $stream
@@ -279,7 +279,7 @@ EOF;
             $this->assertNull($token->getResourceOwnerId());
         }
 
-        public function testUserData()
+        public function testUserData(): void
         {
             $userId = rand(1000, 9999);
             $name = uniqid();
@@ -355,7 +355,7 @@ EOF;
             $this->assertEquals($lastName, $user->toArray()['family_name']);
         }
 
-        public function testUserDataWithEncryption()
+        public function testUserDataWithEncryption(): void
         {
             $jwt = JWT::encode(
                 json_decode(
@@ -443,7 +443,7 @@ EOF;
             $this->assertEquals($lastName, $user->toArray()['family_name']);
         }
 
-        public function testUserDataFailsWhenEncryptionEncounteredAndNotConfigured()
+        public function testUserDataFailsWhenEncryptionEncounteredAndNotConfigured(): void
         {
             $this->expectException(EncryptionConfigurationException::class);
 
@@ -495,7 +495,7 @@ EOF;
             $user = $this->provider->getResourceOwner($token);
         }
 
-        public function testErrorResponse()
+        public function testErrorResponse(): void
         {
             $this->expectException(IdentityProviderException::class);
 
@@ -527,7 +527,7 @@ EOF;
             $token = $this->provider->getAccessToken('authorization_code', ['code' => 'mock_authorization_code']);
         }
 
-        public function testCanDecryptResponseThrowsExceptionIfResponseIsNotAStringAndEncryptionIsNotUsed()
+        public function testCanDecryptResponseThrowsExceptionIfResponseIsNotAStringAndEncryptionIsNotUsed(): void
         {
             $this->expectException(EncryptionConfigurationException::class);
 
@@ -536,7 +536,7 @@ EOF;
             $this->assertFalse($this->provider->usesEncryption());
         }
 
-        public function testCanDecryptResponseReturnsResponseWhenEncryptionIsUsed()
+        public function testCanDecryptResponseReturnsResponseWhenEncryptionIsUsed(): void
         {
             $jwtPayload = json_decode(
                 sprintf(
