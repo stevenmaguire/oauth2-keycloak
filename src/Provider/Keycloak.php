@@ -382,16 +382,15 @@ class Keycloak extends AbstractProvider
      *
      * @throws UnexpectedValueException
      * @param  ResponseInterface $response
-     * @return array<string, mixed>
+     * @return string|array<string, mixed>
      */
-    protected function parseResponse(ResponseInterface $response): array
+    protected function parseResponse(ResponseInterface $response): string|array
     {
         // We have a problem with keycloak when the userinfo responses
         // with a jwt token
         // Because it just return a jwt as string with the header
         // application/jwt
         // This can't be parsed to a array
-        // Dont know why this function only allow an array as return value...
         $content = (string) $response->getBody();
         $type = $this->getContentType($response);
 
